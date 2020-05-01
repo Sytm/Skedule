@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm") version "1.3.20"
     id("org.jetbrains.dokka") version "0.10.1"
     id("com.palantir.git-version") version "0.12.3"
-
+    id("org.datlowe.maven-publish-auth") version "2.0.2"
     `maven-publish`
 }
 group = "me.ddevil"
