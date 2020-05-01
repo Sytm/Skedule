@@ -1,13 +1,16 @@
-import org.jetbrains.dokka.gradle.DokkaTask
+import groovy.lang.Closure
 
 plugins {
     kotlin("jvm") version "1.3.20"
     id("org.jetbrains.dokka") version "0.10.1"
+    id("com.palantir.git-version") version "0.12.3"
+
     `maven-publish`
 }
 group = "com.okkero.skedule"
+val gitVersion: Closure<String> by project.extra
+version = gitVersion()
 
-version = "1.2.7"
 val kotlinCoroutinesVersion by project.extra("1.1.0")
 val bukkitApiVersion by project.extra("1.12.2-R0.1-SNAPSHOT")
 
