@@ -7,7 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitTask
 import kotlin.coroutines.CoroutineContext
 
-private val bukkitScheduler
+internal val bukkitScheduler
     get() = Bukkit.getScheduler()
 
 
