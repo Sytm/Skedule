@@ -121,4 +121,4 @@ internal class RepeatingTaskScheduler(
 
 }
 
-internal fun currentContext() = if (Bukkit.isPrimaryThread()) SynchronizationContext.SYNC else SynchronizationContext.ASYNC
+fun currentContext() = if (Bukkit.isPrimaryThread()) SynchronizationContext.SYNC else SynchronizationContext.ASYNC
