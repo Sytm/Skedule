@@ -1,9 +1,7 @@
 package me.ddevil.skedule
 
-import com.okkero.skedule.BukkitSchedulerController
-import com.okkero.skedule.SynchronizationContext
+import com.okkero.skedule.*
 import com.okkero.skedule.bukkitScheduler
-import com.okkero.skedule.schedule
 import org.bukkit.plugin.Plugin
 
 /**
@@ -22,8 +20,8 @@ import org.bukkit.plugin.Plugin
  * }
  * ```
  */
-fun skeduleSync(plugin: Plugin, block: suspend BukkitSchedulerController.() -> Unit) {
-    bukkitScheduler.schedule(plugin, SynchronizationContext.SYNC, block)
+fun skeduleSync(plugin: Plugin, block: suspend BukkitSchedulerController.() -> Unit): CoroutineTask {
+    return bukkitScheduler.schedule(plugin, SynchronizationContext.SYNC, block)
 }
 
 /**
@@ -42,6 +40,6 @@ fun skeduleSync(plugin: Plugin, block: suspend BukkitSchedulerController.() -> U
  * }
  * ```
  */
-fun skeduleAsync(plugin: Plugin, block: suspend BukkitSchedulerController.() -> Unit) {
-    bukkitScheduler.schedule(plugin, SynchronizationContext.ASYNC, block)
+fun skeduleAsync(plugin: Plugin, block: suspend BukkitSchedulerController.() -> Unit): CoroutineTask {
+    return bukkitScheduler.schedule(plugin, SynchronizationContext.ASYNC, block)
 }
