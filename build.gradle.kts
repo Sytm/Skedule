@@ -41,8 +41,15 @@ val jar by tasks.getting(Jar::class)
 
 publishing {
     repositories {
-        maven("https://repo.lunari.studio/repository/maven-public/") {
+        maven {
             name = "lunari"
+            val baseUrl = "https://repo.lunari.studio/repository"
+            val endPoint = if (version.toString().endsWith("SNAPSHOT")) {
+                "maven-snapshots"
+            } else {
+                "maven-releases"
+            }
+            url = uri("$baseUrl/$endPoint")
         }
     }
     publications {
