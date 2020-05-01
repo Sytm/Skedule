@@ -7,7 +7,7 @@ plugins {
 
     `maven-publish`
 }
-group = "com.okkero.skedule"
+group = "me.ddevil"
 val gitVersion: Closure<String> by project.extra
 version = gitVersion()
 
