@@ -1,5 +1,14 @@
 # Skedule
-A small coroutine library for the BukkitScheduler for Bukkit/Spigot plugin developers using Kotlin
+Please note this is a fork from the original [Skedule](https://github.com/okkero/Skedule).  
+All instructions in this ReadMe are update with new repositories and artifacts.
+
+The objetives of this fork is:
+* Using Gradle as a build system instead of Maven.
+* Keeping up to date with newer Kotlin versions.
+* Having a faster pull request adoption.
+* Maintaining a repository with `sources` and `javadoc` jars. 
+
+Skedule is a small coroutine library for the BukkitScheduler for Bukkit/Spigot plugin developers using Kotlin
 
 Tired of designing complex BukkitRunnables to meet your needs? Do you find yourself in [Callback Hell](http://callbackhell.com/) a tad too often?
 Fret no more, for with Kotlin's coroutines and this nifty little utility, you will be scheduling tasks like never before!
@@ -138,20 +147,20 @@ https://github.com/Kotlin/kotlinx.coroutines
 
 ## Where to get Skedule
 ### Maven
-```maven
+```xml
 <repositories>
     <repository>
-        <id>okkero</id>
-        <url>http://nexus.okkero.com/repository/maven-releases/</url>
+        <id>lunari</id>
+        <url>https://repo.lunari.studio/repository/maven-public/</url>
     </repository>
 </repositories>
 ```
-```maven
+```xml
 <dependencies>
     <dependency>
-        <groupId>com.okkero.skedule</groupId>
+        <groupId>me.ddevil</groupId>
         <artifactId>skedule</artifactId>
-        <version>1.2.6</version>
+        <version>...</version>
         <scope>compile</scope>
     </dependency>
 </dependencies>
@@ -160,13 +169,13 @@ https://github.com/Kotlin/kotlinx.coroutines
 ```groovy
 repositories {
     maven {
-        name = "okkero"
-        url = "http://nexus.okkero.com/repository/maven-releases/"
+        name = "lunari"
+        url = "https://repo.lunari.studio/repository/maven-public/"
     }
 }
 
 dependencies {
-    compile("com.okkero.skedule:skedule:1.2.6")
+    compile("me.ddevil:skedule:...")
 }
 ```
 
