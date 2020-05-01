@@ -3,7 +3,6 @@ package com.okkero.skedule
 import kotlinx.coroutines.*
 import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitTask
 import kotlin.coroutines.CoroutineContext
 
@@ -11,21 +10,24 @@ internal val bukkitScheduler
     get() = Bukkit.getScheduler()
 
 
-@UseExperimental(InternalCoroutinesApi::class)
-class BukkitDispatcher(val plugin: JavaPlugin, val async: Boolean = false) : CoroutineDispatcher(), Delay {
+@OptIn(InternalCoroutinesApi::class)
+class BukkitDispatcher(val plugin: Plugin, val async: Boolean = false) : CoroutineDispatcher(), Delay {
 
-    private val runTaskLater: (Plugin, Runnable, Long) -> BukkitTask =
-            if (async)
-                bukkitScheduler::runTaskLaterAsynchronously
-            else
-                bukkitScheduler::runTaskLater
-    private val runTask: (Plugin, Runnable) -> BukkitTask =
-            if (async)
-                bukkitScheduler::runTaskAsynchronously
-            else
-                bukkitScheduler::runTask
+    private val runTaskLater: (Plugin, Runnable, Long) -> BukkitTask
+        get() = if (async) {
+            bukkitScheduler::runTaskLaterAsynchronously
+        } else {
+            bukkitScheduler::runTaskLater
+        }
 
-    @ExperimentalCoroutinesApi
+    private val runTask: (Plugin, Runnable) -> BukkitTask
+        get() = if (async) {
+            bukkitScheduler::runTaskAsynchronously
+        } else {
+            bukkitScheduler::runTaskAsynchronously
+        }
+
+    @InternalCoroutinesApi
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
         val task = runTaskLater(
                 plugin,
@@ -50,4 +52,4 @@ class BukkitDispatcher(val plugin: JavaPlugin, val async: Boolean = false) : Cor
 
 }
 
-fun JavaPlugin.dispatcher(async: Boolean = false) = BukkitDispatcher(this, async)
+fun Plugin.dispatcher(async: Boolean = false) = BukkitDispatcher(this, async)

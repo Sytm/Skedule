@@ -1,7 +1,7 @@
 import groovy.lang.Closure
 
 plugins {
-    kotlin("jvm") version "1.3.20"
+    kotlin("jvm") version "1.3.70"
     id("org.jetbrains.dokka") version "0.10.1"
     id("com.palantir.git-version") version "0.12.3"
     id("org.datlowe.maven-publish-auth") version "2.0.2"
@@ -11,7 +11,7 @@ group = "me.ddevil"
 val gitVersion: Closure<String> by project.extra
 version = gitVersion()
 
-val kotlinCoroutinesVersion by project.extra("1.1.0")
+val kotlinCoroutinesVersion by project.extra("1.3.5")
 val bukkitApiVersion by project.extra("1.12.2-R0.1-SNAPSHOT")
 
 repositories {
