@@ -1,4 +1,6 @@
 # Skedule
+![](https://img.shields.io/nexus/maven-public/me.ddevil/skedule?server=https%3A%2F%2Frepo.lunari.studio)
+![](https://img.shields.io/github/license/BrunoSilvaFreire/Skedule)  
 Please note this is a fork from the original [Skedule](https://github.com/okkero/Skedule).  
 All instructions in this ReadMe are update with new repositories and artifacts.
 
