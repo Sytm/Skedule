@@ -1,17 +1,17 @@
 import groovy.lang.Closure
 
 plugins {
-    kotlin("jvm") version "1.3.70"
-    id("org.jetbrains.dokka") version "0.10.1"
+    kotlin("jvm") version "1.4.20"
+    id("org.jetbrains.dokka") version "1.4.10.2"
     id("com.palantir.git-version") version "0.12.3"
-    id("org.datlowe.maven-publish-auth") version "2.0.2"
+    id("org.hibernate.build.maven-repo-auth") version "3.0.4"
     `maven-publish`
 }
 group = "me.ddevil"
 val gitVersion: Closure<String> by project.extra
 version = gitVersion()
 
-val kotlinCoroutinesVersion by project.extra("1.3.5")
+val kotlinCoroutinesVersion by project.extra("1.4.1")
 val bukkitApiVersion by project.extra("1.12.2-R0.1-SNAPSHOT")
 
 repositories {
@@ -22,22 +22,30 @@ repositories {
     }
 }
 
-val sourcesJar by tasks.creating(Jar::class) {
-    archiveClassifier.set("sources")
-    from(sourceSets.main.get().allSource)
-}
-
 dependencies {
     api("org.bukkit:bukkit:$bukkitApiVersion")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
     testImplementation(kotlin("test-junit"))
     testImplementation("org.mockito:mockito-all:1.9.5")
 }
+
+tasks.compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        // Add opt in compiler option to allow compilation of BukkitDispatcher.kt without warning
+        freeCompilerArgs = freeCompilerArgs + "-Xopt-in=kotlin.RequiresOptIn"
+    }
+}
+
+val sourcesJar by tasks.creating(Jar::class) {
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
+}
+
 val javadocJar by tasks.creating(Jar::class) {
     archiveClassifier.set("javadoc")
-    from(tasks.dokka)
+    from(tasks.dokkaJavadoc)
 }
-val jar by tasks.getting(Jar::class)
 
 publishing {
     repositories {
@@ -54,7 +62,7 @@ publishing {
     }
     publications {
         create<MavenPublication>("maven") {
-            artifact(jar)
+            from(components["kotlin"])
             artifact(sourcesJar)
             artifact(javadocJar)
         }
