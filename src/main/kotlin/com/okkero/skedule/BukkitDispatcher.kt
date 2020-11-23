@@ -24,7 +24,7 @@ class BukkitDispatcher(val plugin: Plugin, val async: Boolean = false) : Corouti
         get() = if (async) {
             bukkitScheduler::runTaskAsynchronously
         } else {
-            bukkitScheduler::runTaskAsynchronously
+            bukkitScheduler::runTask
         }
 
     @InternalCoroutinesApi
