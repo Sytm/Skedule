@@ -11,7 +11,7 @@ group = "me.ddevil"
 val gitVersion: Closure<String> by project.extra
 version = gitVersion()
 
-val kotlinCoroutinesVersion by project.extra("1.4.1")
+val kotlinCoroutinesVersion by project.extra("1.5.0-RC")
 val bukkitApiVersion by project.extra("1.12.2-R0.1-SNAPSHOT")
 
 repositories {
