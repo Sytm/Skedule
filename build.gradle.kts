@@ -23,8 +23,8 @@ repositories {
 }
 
 dependencies {
-    api("org.bukkit:bukkit:$bukkitApiVersion")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
+    compileOnly("org.bukkit:bukkit:$bukkitApiVersion")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
     testImplementation(kotlin("test-junit"))
     testImplementation("org.mockito:mockito-all:1.9.5")
 }
