@@ -108,9 +108,6 @@ class SchedulerCoroutineTest {
     private fun setupServerMock() {
         `when`(server.isPrimaryThread).thenReturn(true)
         `when`(server.scheduler).thenReturn(scheduler)
-        if (Bukkit.getServer() == null) {
-            Bukkit.setServer(server)
-        }
     }
 
 }
