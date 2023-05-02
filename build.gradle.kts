@@ -1,43 +1,35 @@
-import groovy.lang.Closure
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.10"
-    id("org.jetbrains.dokka") version "1.6.10"
-    id("com.palantir.git-version") version "0.12.3"
-    id("org.hibernate.build.maven-repo-auth") version "3.0.4"
+    kotlin("jvm") version libs.versions.kotlin
+    alias(libs.plugins.dokka)
     `maven-publish`
 }
-group = "me.ddevil"
-val gitVersion: Closure<String> by project.extra
-version = gitVersion()
 
-val kotlinCoroutinesVersion by project.extra("1.6.0")
-val paperVersion by project.extra("1.18.2-R0.1-SNAPSHOT")
+group = "de.md5lukas"
+version = "1.0.0-SNAPSHOT"
 
 repositories {
-    jcenter()
-    maven ("https://papermc.io/repo/repository/maven-public/")
     mavenCentral()
+    maven("https://papermc.io/repo/repository/maven-public/")
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:$paperVersion")
-    testImplementation("io.papermc.paper:paper-api:$paperVersion")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+    implementation(libs.paper)
+    implementation(libs.coroutines)
     testImplementation(kotlin("test-junit"))
-    testImplementation("org.mockito:mockito-all:1.10.19")
+    testImplementation(libs.mockito)
 }
 
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+tasks.withType<KotlinCompile> {
+    compilerOptions.freeCompilerArgs.addAll(
+        "-Xjvm-default=all",
+        "-Xlambdas=indy",
+    )
 }
 
-tasks.compileKotlin {
-    kotlinOptions {
-        jvmTarget = "17"
-        // Add opt in compiler option to allow compilation of BukkitDispatcher.kt without warning
-        freeCompilerArgs = freeCompilerArgs + "-Xopt-in=kotlin.RequiresOptIn"
-    }
+kotlin {
+    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
 }
 
 val sourcesJar by tasks.creating(Jar::class) {
@@ -53,14 +45,22 @@ val javadocJar by tasks.creating(Jar::class) {
 publishing {
     repositories {
         maven {
-            name = "lunari"
-            val baseUrl = "https://repo.lunari.studio/repository"
-            val endPoint = if (version.toString().endsWith("SNAPSHOT")) {
-                "maven-snapshots"
-            } else {
-                "maven-releases"
+            name = "md5lukasReposilite"
+
+            url = uri(
+                "https://repo.md5lukas.de/${
+                    if (version.toString().endsWith("-SNAPSHOT")) {
+                        "snapshots"
+                    } else {
+                        "releases"
+                    }
+                }"
+            )
+
+            credentials(PasswordCredentials::class)
+            authentication {
+                create<BasicAuthentication>("basic")
             }
-            url = uri("$baseUrl/$endPoint")
         }
     }
     publications {

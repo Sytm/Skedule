@@ -84,7 +84,7 @@ class BukkitSchedulerController(val plugin: Plugin, val scheduler: BukkitSchedul
      * @param context the synchronization context of the new task
      */
     suspend fun newContext(context: SynchronizationContext): Unit = suspendCoroutine { cont ->
-        schedulerDelegate.forceNewContext(context, { cont.resume(Unit) })
+        schedulerDelegate.forceNewContext(context) { cont.resume(Unit) }
     }
 
     /**
