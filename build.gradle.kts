@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "de.md5lukas"
-version = "1.0.0-SNAPSHOT"
+version = "1.3.0"
 
 repositories {
     mavenCentral()
@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
     implementation(libs.paper)
-    implementation(libs.coroutines)
+    api(libs.coroutines)
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.mockito)
 }
