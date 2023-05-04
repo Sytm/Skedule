@@ -99,4 +99,15 @@ class BukkitSchedulerController(val plugin: Plugin, val scheduler: BukkitSchedul
         schedulerDelegate.forceNewContext(currentContext()) { cont.resume(0) }
     }
 
+    suspend inline fun <T> runWithContext(context: SynchronizationContext, block: BukkitSchedulerController.() -> T): T {
+        val before = currentContext()
+        if (before != context) {
+            switchContext(context)
+        }
+        val r = block()
+        if (before != context) {
+            switchContext(before)
+        }
+        return r
+    }
 }
