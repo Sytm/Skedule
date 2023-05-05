@@ -1,125 +1,127 @@
 package com.okkero.skedule
 
-import org.bukkit.Bukkit
-import org.bukkit.Server
-import org.bukkit.plugin.Plugin
-import org.bukkit.scheduler.BukkitScheduler
-import org.bukkit.scheduler.BukkitTask
+import be.seeseemelk.mockbukkit.MockBukkit
+import be.seeseemelk.mockbukkit.MockPlugin
+import be.seeseemelk.mockbukkit.ServerMock
+import com.okkero.skedule.schedulers.Schedulers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.mockito.Answers
-import org.mockito.Mock
-import org.mockito.Mockito.*
-import org.mockito.runners.MockitoJUnitRunner
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReferenceArray
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
-@RunWith(MockitoJUnitRunner::class)
 class SchedulerCoroutineTest {
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    lateinit var server: Server
-    @Mock lateinit var scheduler: BukkitScheduler
-    @Mock lateinit var plugin: Plugin
+    private lateinit var workerThread: Thread
 
-    private var mockRepeatingTask: MockRepeatingTask? = null
+    private lateinit var server: ServerMock
+    private lateinit var plugin: MockPlugin
 
     @Before
     fun setup() {
-        `when`(scheduler.runTaskTimer(eq(plugin), any(Runnable::class.java), anyLong(), anyLong())).then {
-            if (this.mockRepeatingTask != null) {
-                throw Exception()
-            }
+        workerThread = Thread.currentThread()
 
-            val task = mock(BukkitTask::class.java)
-            val mockRepeatingTask = MockRepeatingTask { (it.arguments[1] as Runnable).run() }
-            `when`(task.cancel()).then {
-                mockRepeatingTask.cancelled = true
-                Unit
-            }
-            this.mockRepeatingTask = mockRepeatingTask
-
-            task
-        }
-        `when`(scheduler.runTaskLater(eq(plugin), any(Runnable::class.java), anyLong())).then {
-            (it.arguments[1] as Runnable).run()
-            mock(BukkitTask::class.java)
-        }
-
-        setupServerMock()
-
-        `when`(plugin.server).thenReturn(server)
+        server = MockBukkit.mock()
+        plugin = MockBukkit.createMockPlugin()
     }
 
     @After
     fun tearDown() {
-        mockRepeatingTask = null
+        MockBukkit.unmock()
     }
 
     @Test
-    fun `schedules correct tasks when not repeating`() {
-        scheduler.schedule(plugin) {
-            waitFor(30)
-            waitFor(30)
-        }
-        verify(scheduler, times(2)).runTaskLater(eq(plugin), any(Runnable::class.java), eq(30L))
-        verifyNoMoreInteractions(scheduler)
-    }
+    fun `coroutine is redispatched on yield`() = runBlocking {
+        val calls = AtomicInteger()
 
-    @Test
-    fun `schedules correct tasks when repeating`() {
-        scheduler.schedule(plugin) {
-            repeating(20)
+        plugin.schedule(SynchronizationContext.SYNC) {
+            calls.incrementAndGet()
             yield()
-            waitFor(40)
+            calls.incrementAndGet()
         }
-        assertNotNull(mockRepeatingTask)
-        mockRepeatingTask!!.startTask()
-        verify(scheduler).runTaskTimer(eq(plugin), any(Runnable::class.java), anyLong(), eq(20L))
-        verifyNoMoreInteractions(scheduler)
+
+        assertEquals(0, calls.get())
+        server.scheduler.performOneTick()
+        assertEquals(1, calls.get())
+        server.scheduler.performOneTick()
+        assertEquals(2, calls.get())
     }
 
     @Test
-    fun `cancels bukkit task when skedule task is cancelled`() {
-        var task: BukkitTask? = null
-        `when`(scheduler.runTaskLater(eq(plugin), any(Runnable::class.java), anyLong())).then {
-            task = mock(BukkitTask::class.java)
-            task
-        }
-        val skeduleTask = scheduler.schedule(plugin) {
-            waitFor(40)
+    fun `coroutine is dispatched using runTaskLater on scheduler on delay`() = runBlocking {
+        val calls = AtomicInteger()
+
+        plugin.schedule(SynchronizationContext.SYNC) {
+            calls.incrementAndGet()
+            delay(200) // 4 Ticks total
+            calls.incrementAndGet()
         }
 
-        skeduleTask.cancel()
-        verify(task!!, times(1)).cancel()
+        assertEquals(0, calls.get())
+        server.scheduler.performOneTick()
+        assertEquals(1, calls.get())
+        server.scheduler.performTicks(3)
+        assertEquals(1, calls.get())
+        server.scheduler.performOneTick()
+        assertEquals(2, calls.get())
     }
 
     @Test
-    fun `schedules correct tasks when using new function`() {
-        plugin.schedule {
-            waitFor(30)
-            waitFor(30)
+    fun `coroutine is dispatched to different threads`() {
+        val threads = AtomicReferenceArray<Thread>(3)
+
+        plugin.schedule(SynchronizationContext.SYNC) {
+            threads[0] = Thread.currentThread()
+            switchContext(SynchronizationContext.ASYNC)
+            threads[1] = Thread.currentThread()
+            switchContext(SynchronizationContext.SYNC)
+            threads[2] = Thread.currentThread()
         }
-        verify(scheduler, times(2)).runTaskLater(eq(plugin), any(Runnable::class.java), eq(30L))
-        verifyNoMoreInteractions(scheduler)
+
+        server.scheduler.performOneTick()
+        server.scheduler.waitAsyncTasksFinished()
+        assertEquals(workerThread, threads[0])
+        assertNotEquals(workerThread, threads[1])
+        assertNull(threads[2])
+        server.scheduler.performOneTick()
+        server.scheduler.waitAsyncTasksFinished()
+        assertEquals(workerThread, threads[2])
     }
 
-    private fun setupServerMock() {
-        `when`(server.isPrimaryThread).thenReturn(true)
-        `when`(server.scheduler).thenReturn(scheduler)
-    }
+    @Test
+    fun `coroutine returns to original synchronization context when using withSynchronizationContext`() {
+        val threads = AtomicReferenceArray<Thread>(5)
 
-}
-
-private class MockRepeatingTask(val task: () -> Unit) {
-
-    var cancelled = false
-
-    fun startTask() {
-        while (!cancelled) {
-            task()
+        plugin.schedule(SynchronizationContext.SYNC) {
+            threads[0] = Thread.currentThread()
+            withSynchronizationContext(SynchronizationContext.ASYNC) {
+                threads[1] = Thread.currentThread()
+                switchContext(SynchronizationContext.SYNC)
+                threads[2] = Thread.currentThread()
+                switchContext(SynchronizationContext.ASYNC)
+                threads[3] = Thread.currentThread()
+            }
+            threads[4] = Thread.currentThread()
         }
-    }
 
+        server.scheduler.performOneTick()
+        server.scheduler.waitAsyncTasksFinished()
+        assertEquals(workerThread, threads[0])
+        assertNotEquals(workerThread, threads[1])
+        server.scheduler.performOneTick()
+        server.scheduler.waitAsyncTasksFinished()
+        assertEquals(workerThread, threads[2])
+        assertNotEquals(workerThread, threads[3])
+        server.scheduler.waitAsyncTasksFinished()
+        server.scheduler.performOneTick()
+        assertEquals(workerThread, threads[4])
+
+    }
 }

@@ -6,7 +6,7 @@ package com.okkero.skedule
 enum class SynchronizationContext {
 
     /**
-     * The coroutine is in synchronous context, and all tasks are scheduled on the main server thread
+     * The coroutine is in synchronous context, and all tasks are scheduled on the main server thread or the region thread
      */
     SYNC,
     /**

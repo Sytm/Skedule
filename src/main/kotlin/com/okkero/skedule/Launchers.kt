@@ -1,83 +1,30 @@
 package com.okkero.skedule
 
+import com.okkero.skedule.schedulers.AbstractScheduler
+import com.okkero.skedule.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import org.bukkit.entity.Entity
 import org.bukkit.plugin.Plugin
-import org.bukkit.scheduler.BukkitScheduler
-import kotlin.coroutines.createCoroutine
-import kotlin.coroutines.resume
 
 fun Plugin.schedule(
-        initialContext: SynchronizationContext = SynchronizationContext.SYNC,
-        co: suspend BukkitSchedulerController.() -> Unit
-): CoroutineTask {
-    return server.scheduler.schedule(this, initialContext, co)
+    sync: SynchronizationContext = SynchronizationContext.SYNC,
+    block: suspend CoroutineScope.() -> Unit,
+) {
+    Schedulers.global(this).schedule(sync, block)
 }
 
-/**
- * Schedule a coroutine with the Bukkit Scheduler.
- *
- * @receiver The BukkitScheduler instance to use for scheduling tasks.
- * @param plugin The Plugin instance to use for scheduling tasks.
- * @param initialContext The initial synchronization context to start off the coroutine with. See
- * [SynchronizationContext].
- *
- * @see SynchronizationContext
- */
-fun BukkitScheduler.schedule(
-        plugin: Plugin,
-        initialContext: SynchronizationContext = SynchronizationContext.SYNC,
-        co: suspend BukkitSchedulerController.() -> Unit
-): CoroutineTask {
-    val controller = BukkitSchedulerController(plugin, this)
-    val block: suspend BukkitSchedulerController.() -> Unit = {
-        try {
-            start(initialContext)
-            co()
-        } finally {
-            cleanup()
-        }
-    }
-
-    block.createCoroutine(receiver = controller, completion = controller).resume(Unit)
-
-    return CoroutineTask(controller)
+fun Plugin.schedule(
+    entity: Entity,
+    sync: SynchronizationContext = SynchronizationContext.SYNC,
+    block: suspend CoroutineScope.() -> Unit,
+) {
+    Schedulers.entity(this, entity).schedule(sync, block)
 }
 
-/**
- * Sugar function to allow for easier creation of coroutines.
- *
- * For example, before:
- * ```kotlin
- * Bukkit.getScheduler().schedule(myPlugin) {
- *     //...
- * }
- * ```
- * After:
- * ```kotlin
- * skeduleSync(myPlugin) {
- *     //...
- * }
- * ```
- */
-fun skeduleSync(plugin: Plugin, block: suspend BukkitSchedulerController.() -> Unit): CoroutineTask {
-    return bukkitScheduler.schedule(plugin, SynchronizationContext.SYNC, block)
-}
-
-/**
- * Sugar function to allow for easier creation of coroutines.
- *
- * For example, before:
- * ```kotlin
- * Bukkit.getScheduler().schedule(myPlugin, SynchronizationContext.ASYNC) {
- *     //...
- * }
- * ```
- * After:
- * ```kotlin
- * skeduleAsync(myPlugin) {
- *     //...
- * }
- * ```
- */
-fun skeduleAsync(plugin: Plugin, block: suspend BukkitSchedulerController.() -> Unit): CoroutineTask {
-    return bukkitScheduler.schedule(plugin, SynchronizationContext.ASYNC, block)
+fun AbstractScheduler.schedule(
+    sync: SynchronizationContext = SynchronizationContext.SYNC,
+    block: suspend CoroutineScope.() -> Unit,
+) {
+    CoroutineScope(BukkitDispatcher(this)).launch(context = BukkitSchedulerSynchronizationContext(sync), block = block)
 }

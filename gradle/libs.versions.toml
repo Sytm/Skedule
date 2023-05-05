@@ -5,10 +5,11 @@ paper = "1.19.4-R0.1-SNAPSHOT"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
+folia = { group = "dev.folia", name = "folia-api", version.ref = "paper" }
 coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.0-RC" }
 
 # Test dependencies
-mockito = { group = "org.mockito", name = "mockito-all", version = "1.10.19" }
+mockBukkit = { group = "com.github.seeseemelk", name = "MockBukkit-v1.19", version = "2.+" }
 
 [plugins]
 dokka = { id = "org.jetbrains.dokka", version = "1.+" }

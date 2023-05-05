@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "de.md5lukas"
-version = "1.3.0"
+version = "2.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -15,10 +15,11 @@ repositories {
 }
 
 dependencies {
-    implementation(libs.paper)
+    compileOnly(libs.folia)
+    runtimeOnly(libs.paper)
     api(libs.coroutines)
     testImplementation(kotlin("test-junit"))
-    testImplementation(libs.mockito)
+    testImplementation(libs.mockBukkit)
 }
 
 tasks.withType<KotlinCompile> {
