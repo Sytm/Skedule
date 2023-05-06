@@ -12,4 +12,6 @@ coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core"
 mockBukkit = { group = "com.github.seeseemelk", name = "MockBukkit-v1.19", version = "2.+" }
 
 [plugins]
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version = "6.+" }
 dokka = { id = "org.jetbrains.dokka", version = "1.+" }

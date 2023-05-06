@@ -1,8 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version libs.versions.kotlin
-    alias(libs.plugins.dokka)
+    with (libs.plugins) {
+        alias(kotlin)
+        alias(spotless)
+        alias(dokka)
+    }
     `maven-publish`
 }
 
@@ -41,6 +44,12 @@ val sourcesJar by tasks.creating(Jar::class) {
 val javadocJar by tasks.creating(Jar::class) {
     archiveClassifier.set("javadoc")
     from(tasks.dokkaJavadoc)
+}
+
+spotless {
+    kotlin {
+        ktfmt()
+    }
 }
 
 publishing {

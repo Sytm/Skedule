@@ -11,7 +11,7 @@ fun Plugin.schedule(
     sync: SynchronizationContext = SynchronizationContext.SYNC,
     block: suspend CoroutineScope.() -> Unit,
 ) {
-    Schedulers.global(this).schedule(sync, block)
+  Schedulers.global(this).schedule(sync, block)
 }
 
 fun Plugin.schedule(
@@ -19,12 +19,13 @@ fun Plugin.schedule(
     sync: SynchronizationContext = SynchronizationContext.SYNC,
     block: suspend CoroutineScope.() -> Unit,
 ) {
-    Schedulers.entity(this, entity).schedule(sync, block)
+  Schedulers.entity(this, entity).schedule(sync, block)
 }
 
 fun AbstractScheduler.schedule(
     sync: SynchronizationContext = SynchronizationContext.SYNC,
     block: suspend CoroutineScope.() -> Unit,
 ) {
-    CoroutineScope(BukkitDispatcher(this)).launch(context = BukkitSchedulerSynchronizationContext(sync), block = block)
+  CoroutineScope(BukkitDispatcher(this))
+      .launch(context = BukkitSchedulerSynchronizationContext(sync), block = block)
 }
