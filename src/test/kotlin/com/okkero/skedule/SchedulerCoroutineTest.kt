@@ -7,9 +7,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.junit.After
 import org.junit.Before
@@ -39,7 +43,7 @@ class SchedulerCoroutineTest {
   fun `coroutine is redispatched on yield`() = runBlocking {
     val calls = AtomicInteger()
 
-    plugin.schedule(SynchronizationContext.SYNC) {
+    plugin.skedule(SynchronizationContext.SYNC) {
       calls.incrementAndGet()
       yield()
       calls.incrementAndGet()
@@ -56,7 +60,7 @@ class SchedulerCoroutineTest {
   fun `coroutine is dispatched using runTaskLater on scheduler on delay`() = runBlocking {
     val calls = AtomicInteger()
 
-    plugin.schedule(SynchronizationContext.SYNC) {
+    plugin.skedule(SynchronizationContext.SYNC) {
       calls.incrementAndGet()
       delay(200) // 4 Ticks total
       calls.incrementAndGet()
@@ -75,7 +79,7 @@ class SchedulerCoroutineTest {
   fun `coroutine is dispatched to different threads`() {
     val threads = AtomicReferenceArray<Thread>(3)
 
-    plugin.schedule(SynchronizationContext.SYNC) {
+    plugin.skedule(SynchronizationContext.SYNC) {
       threads[0] = Thread.currentThread()
       switchContext(SynchronizationContext.ASYNC)
       threads[1] = Thread.currentThread()
@@ -94,32 +98,64 @@ class SchedulerCoroutineTest {
   }
 
   @Test
-  fun `coroutine returns to original synchronization context when using withSynchronizationContext`() {
-    val threads = AtomicReferenceArray<Thread>(5)
+  fun `coroutine returns to bukkit dispatcher after using IO dispatcher`() = runBlocking {
+    val threads = AtomicReferenceArray<Thread>(3)
 
-    plugin.schedule(SynchronizationContext.SYNC) {
+    val lock = Mutex(true)
+
+    plugin.skedule(SynchronizationContext.SYNC) {
       threads[0] = Thread.currentThread()
-      withSynchronizationContext(SynchronizationContext.ASYNC) {
+      withContext(Dispatchers.IO) {
         threads[1] = Thread.currentThread()
-        switchContext(SynchronizationContext.SYNC)
-        threads[2] = Thread.currentThread()
-        switchContext(SynchronizationContext.ASYNC)
-        threads[3] = Thread.currentThread()
+        lock.unlock()
       }
-      threads[4] = Thread.currentThread()
+      switchContext(SynchronizationContext.SYNC)
+      threads[2] = Thread.currentThread()
+      lock.unlock()
     }
-
     server.scheduler.performOneTick()
-    server.scheduler.waitAsyncTasksFinished()
+    lock.lock()
+    while (lock.isLocked) {
+      server.scheduler.performOneTick()
+      delay(50)
+    }
+    lock.lock()
     assertEquals(workerThread, threads[0])
+    assertNotNull(threads[1])
     assertNotEquals(workerThread, threads[1])
-    server.scheduler.performOneTick()
-    server.scheduler.waitAsyncTasksFinished()
     assertEquals(workerThread, threads[2])
-    assertNotEquals(workerThread, threads[3])
-    server.scheduler.waitAsyncTasksFinished()
-    server.scheduler.performOneTick()
-    server.scheduler.waitAsyncTasksFinished()
-    assertEquals(workerThread, threads[4])
   }
+
+  @Test
+  fun `coroutine returns to original synchronization context when using withSynchronizationContext`() =
+      runBlocking {
+        val threads = AtomicReferenceArray<Thread>(5)
+
+        val lock = Mutex(true)
+
+        plugin.skedule(SynchronizationContext.SYNC) {
+          threads[0] = Thread.currentThread()
+          withSynchronizationContext(SynchronizationContext.ASYNC) {
+            threads[1] = Thread.currentThread()
+            lock.unlock()
+            switchContext(SynchronizationContext.SYNC)
+            threads[2] = Thread.currentThread()
+            switchContext(SynchronizationContext.ASYNC)
+            threads[3] = Thread.currentThread()
+            lock.unlock()
+          }
+          threads[4] = Thread.currentThread()
+        }
+
+        server.scheduler.performOneTick()
+        lock.lock()
+        assertEquals(workerThread, threads[0])
+        assertNotEquals(workerThread, threads[1])
+        server.scheduler.performOneTick()
+        lock.lock()
+        assertEquals(workerThread, threads[2])
+        assertNotEquals(workerThread, threads[3])
+        server.scheduler.performOneTick()
+        assertEquals(workerThread, threads[4])
+      }
 }
