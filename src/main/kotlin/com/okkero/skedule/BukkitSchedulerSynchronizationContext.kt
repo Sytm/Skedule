@@ -1,8 +1,6 @@
 package com.okkero.skedule
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.yield
-import kotlin.contracts.contract
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 

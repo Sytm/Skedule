@@ -1,15 +1,16 @@
 package com.okkero.skedule.schedulers
 
-import io.papermc.paper.threadedregions.scheduler.*
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.plugin.Plugin
+import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 object Schedulers {
     private val isFolia = try {
-        Class.forName("io.papermc.paper.threadedregions.scheduler.EntityScheduler");
+        Class.forName("io.papermc.paper.threadedregions.scheduler.EntityScheduler")
         true
     } catch (e: ClassNotFoundException) {
         false
@@ -49,7 +50,7 @@ sealed interface AbstractScheduler {
     fun scheduleTimerAsync(block: Runnable, interval: Long, retired: Runnable): AbstractScheduledTask?
 }
 
-internal class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
+private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
 
     private val scheduler
         get() = plugin.server.scheduler
@@ -70,9 +71,11 @@ internal class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
 
     override fun scheduleTimerAsync(block: Runnable, interval: Long, retired: Runnable) =
         BukkitScheduledTask(scheduler.runTaskTimerAsynchronously(plugin, block, 0L, interval))
+
+    override fun toString() = "BukkitScheduler(plugin=$plugin)"
 }
 
-internal abstract class FoliaSchedulerBase(protected val plugin: Plugin) : AbstractScheduler {
+private sealed class FoliaSchedulerBase(protected val plugin: Plugin) : AbstractScheduler {
 
     private val scheduler
         get() = plugin.server.asyncScheduler
@@ -95,7 +98,7 @@ internal abstract class FoliaSchedulerBase(protected val plugin: Plugin) : Abstr
         )
 }
 
-internal class FoliaGlobalScheduler(plugin: Plugin) : FoliaSchedulerBase(plugin) {
+private class FoliaGlobalScheduler(plugin: Plugin) : FoliaSchedulerBase(plugin) {
 
     private val scheduler
         get() = plugin.server.globalRegionScheduler
@@ -108,9 +111,11 @@ internal class FoliaGlobalScheduler(plugin: Plugin) : FoliaSchedulerBase(plugin)
 
     override fun scheduleTimer(block: Runnable, interval: Long, retired: Runnable): AbstractScheduledTask =
         FoliaScheduledTask(scheduler.runAtFixedRate(plugin, ConsumerRunner(block), 0L, interval))
+
+    override fun toString() = "FoliaGlobalScheduler(plugin=$plugin)"
 }
 
-internal class FoliaRegionScheduler(
+private class FoliaRegionScheduler(
     plugin: Plugin,
     private val location: Location,
 ) : FoliaSchedulerBase(plugin) {
@@ -126,9 +131,11 @@ internal class FoliaRegionScheduler(
 
     override fun scheduleTimer(block: Runnable, interval: Long, retired: Runnable): AbstractScheduledTask =
         FoliaScheduledTask(scheduler.runAtFixedRate(plugin, location, ConsumerRunner(block), 0L, interval))
+
+    override fun toString() = "FoliaRegionScheduler(plugin=$plugin, location=$location)"
 }
 
-internal class FoliaEntityScheduler(
+private class FoliaEntityScheduler(
     plugin: Plugin,
     private val entity: Entity,
 ) : FoliaSchedulerBase(plugin) {
@@ -145,6 +152,32 @@ internal class FoliaEntityScheduler(
     override fun scheduleTimer(block: Runnable, interval: Long, retired: Runnable): AbstractScheduledTask? =
         scheduler.runAtFixedRate(plugin, ConsumerRunner(block), retired, 0L, interval)
             ?.let { FoliaScheduledTask(it) }
+
+    override fun toString() = "FoliaEntityScheduler(plugin=$plugin, entity=$entity)"
+}
+
+sealed interface AbstractScheduledTask {
+    fun cancel()
+}
+
+private class BukkitScheduledTask(
+    private val task: BukkitTask,
+) : AbstractScheduledTask {
+    override fun cancel() {
+        task.cancel()
+    }
+
+    override fun toString() = "BukkitScheduledTask(task=$task)"
+}
+
+private class FoliaScheduledTask(
+    private val task: ScheduledTask,
+) : AbstractScheduledTask {
+    override fun cancel() {
+        task.cancel()
+    }
+
+    override fun toString() = "FoliaScheduledTask(task=$task)"
 }
 
 private class ConsumerRunner(
