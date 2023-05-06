@@ -41,17 +41,17 @@ object Schedulers {
 
 sealed interface AbstractScheduler {
 
-  fun schedule(block: Runnable, retired: Runnable): AbstractScheduledTask?
+  fun schedule(retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 
-  fun scheduleAsync(block: Runnable, retired: Runnable): AbstractScheduledTask?
+  fun scheduleAsync(retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 
-  fun scheduleDelayed(block: Runnable, delay: Long, retired: Runnable): AbstractScheduledTask?
+  fun scheduleDelayed(delay: Long, retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 
-  fun scheduleDelayedAsync(block: Runnable, delay: Long, retired: Runnable): AbstractScheduledTask?
+  fun scheduleDelayedAsync(delay: Long, retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 
-  fun scheduleAtFixedRate(block: Runnable, interval: Long, retired: Runnable): AbstractScheduledTask?
+  fun scheduleAtFixedRate(interval: Long, delay: Long = 0, retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 
-  fun scheduleAtFixedRateAsync(block: Runnable, interval: Long, retired: Runnable): AbstractScheduledTask?
+  fun scheduleAtFixedRateAsync(interval: Long, delay: Long = 0, retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 }
 
 private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
@@ -59,23 +59,23 @@ private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
   private val scheduler
     get() = plugin.server.scheduler
 
-  override fun schedule(block: Runnable, retired: Runnable) =
+  override fun schedule(retired: Runnable, block: Runnable) =
       BukkitScheduledTask(scheduler.runTask(plugin, block))
 
-  override fun scheduleAsync(block: Runnable, retired: Runnable) =
+  override fun scheduleAsync(retired: Runnable, block: Runnable) =
       BukkitScheduledTask(scheduler.runTaskAsynchronously(plugin, block))
 
-  override fun scheduleDelayed(block: Runnable, delay: Long, retired: Runnable) =
+  override fun scheduleDelayed(delay: Long, retired: Runnable, block: Runnable) =
       BukkitScheduledTask(scheduler.runTaskLater(plugin, block, delay))
 
-  override fun scheduleDelayedAsync(block: Runnable, delay: Long, retired: Runnable) =
+  override fun scheduleDelayedAsync(delay: Long, retired: Runnable, block: Runnable) =
       BukkitScheduledTask(scheduler.runTaskLaterAsynchronously(plugin, block, delay))
 
-  override fun scheduleAtFixedRate(block: Runnable, interval: Long, retired: Runnable) =
-      BukkitScheduledTask(scheduler.runTaskTimer(plugin, block, 0L, interval))
+  override fun scheduleAtFixedRate(interval: Long, delay: Long, retired: Runnable, block: Runnable) =
+      BukkitScheduledTask(scheduler.runTaskTimer(plugin, block, delay, interval))
 
-  override fun scheduleAtFixedRateAsync(block: Runnable, interval: Long, retired: Runnable) =
-      BukkitScheduledTask(scheduler.runTaskTimerAsynchronously(plugin, block, 0L, interval))
+  override fun scheduleAtFixedRateAsync(interval: Long, delay: Long, retired: Runnable, block: Runnable) =
+      BukkitScheduledTask(scheduler.runTaskTimerAsynchronously(plugin, block, delay, interval))
 
   override fun toString() = "BukkitScheduler(plugin=$plugin)"
 }
@@ -85,25 +85,26 @@ private sealed class FoliaSchedulerBase(protected val plugin: Plugin) : Abstract
   private val scheduler
     get() = plugin.server.asyncScheduler
 
-  override fun scheduleAsync(block: Runnable, retired: Runnable): AbstractScheduledTask =
+  override fun scheduleAsync(retired: Runnable, block: Runnable): AbstractScheduledTask =
       FoliaScheduledTask(scheduler.runNow(plugin, ConsumerRunner(block)))
 
   override fun scheduleDelayedAsync(
-      block: Runnable,
-      delay: Long,
-      retired: Runnable
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask =
       FoliaScheduledTask(
           scheduler.runDelayed(plugin, ConsumerRunner(block), delay * 50, TimeUnit.MILLISECONDS))
 
   override fun scheduleAtFixedRateAsync(
-      block: Runnable,
-      interval: Long,
-      retired: Runnable
+    interval: Long,
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask =
       FoliaScheduledTask(
           scheduler.runAtFixedRate(
-              plugin, ConsumerRunner(block), 0L, interval * 50, TimeUnit.MILLISECONDS),
+              plugin, ConsumerRunner(block), delay * 50, interval * 50, TimeUnit.MILLISECONDS),
       )
 }
 
@@ -112,22 +113,23 @@ private class FoliaGlobalScheduler(plugin: Plugin) : FoliaSchedulerBase(plugin) 
   private val scheduler
     get() = plugin.server.globalRegionScheduler
 
-  override fun schedule(block: Runnable, retired: Runnable): AbstractScheduledTask =
+  override fun schedule(retired: Runnable, block: Runnable): AbstractScheduledTask =
       FoliaScheduledTask(scheduler.run(plugin, ConsumerRunner(block)))
 
   override fun scheduleDelayed(
-      block: Runnable,
-      delay: Long,
-      retired: Runnable
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask =
       FoliaScheduledTask(scheduler.runDelayed(plugin, ConsumerRunner(block), delay))
 
   override fun scheduleAtFixedRate(
-      block: Runnable,
-      interval: Long,
-      retired: Runnable
+    interval: Long,
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask =
-      FoliaScheduledTask(scheduler.runAtFixedRate(plugin, ConsumerRunner(block), 0L, interval))
+      FoliaScheduledTask(scheduler.runAtFixedRate(plugin, ConsumerRunner(block), delay, interval))
 
   override fun toString() = "FoliaGlobalScheduler(plugin=$plugin)"
 }
@@ -140,23 +142,24 @@ private class FoliaRegionScheduler(
   private val scheduler
     get() = plugin.server.regionScheduler
 
-  override fun schedule(block: Runnable, retired: Runnable): AbstractScheduledTask =
+  override fun schedule(retired: Runnable, block: Runnable): AbstractScheduledTask =
       FoliaScheduledTask(scheduler.run(plugin, location, ConsumerRunner(block)))
 
   override fun scheduleDelayed(
-      block: Runnable,
-      delay: Long,
-      retired: Runnable
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask =
       FoliaScheduledTask(scheduler.runDelayed(plugin, location, ConsumerRunner(block), delay))
 
   override fun scheduleAtFixedRate(
-      block: Runnable,
-      interval: Long,
-      retired: Runnable
+    interval: Long,
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask =
       FoliaScheduledTask(
-          scheduler.runAtFixedRate(plugin, location, ConsumerRunner(block), 0L, interval))
+          scheduler.runAtFixedRate(plugin, location, ConsumerRunner(block), delay, interval))
 
   override fun toString() = "FoliaRegionScheduler(plugin=$plugin, location=$location)"
 }
@@ -169,24 +172,25 @@ private class FoliaEntityScheduler(
   private val scheduler
     get() = entity.scheduler
 
-  override fun schedule(block: Runnable, retired: Runnable): AbstractScheduledTask? =
+  override fun schedule(retired: Runnable, block: Runnable): AbstractScheduledTask? =
       scheduler.run(plugin, ConsumerRunner(block), retired)?.let { FoliaScheduledTask(it) }
 
   override fun scheduleDelayed(
-      block: Runnable,
-      delay: Long,
-      retired: Runnable
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask? =
       scheduler.runDelayed(plugin, ConsumerRunner(block), retired, delay)?.let {
         FoliaScheduledTask(it)
       }
 
   override fun scheduleAtFixedRate(
-      block: Runnable,
-      interval: Long,
-      retired: Runnable
+    interval: Long,
+    delay: Long,
+    retired: Runnable,
+    block: Runnable
   ): AbstractScheduledTask? =
-      scheduler.runAtFixedRate(plugin, ConsumerRunner(block), retired, 0L, interval)?.let {
+      scheduler.runAtFixedRate(plugin, ConsumerRunner(block), retired, delay, interval)?.let {
         FoliaScheduledTask(it)
       }
 
@@ -223,4 +227,8 @@ private class ConsumerRunner(
   override fun accept(t: ScheduledTask) {
     block.run()
   }
+}
+
+object NOOP : Runnable {
+  override fun run() {}
 }

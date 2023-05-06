@@ -55,8 +55,8 @@ class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDisp
       retired: Runnable
   ): AbstractScheduledTask? =
       when (sync) {
-        SynchronizationContext.SYNC -> scheduler.scheduleDelayed(block, delay, retired)
-        SynchronizationContext.ASYNC -> scheduler.scheduleDelayedAsync(block, delay, retired)
+        SynchronizationContext.SYNC -> scheduler.scheduleDelayed(delay, retired, block)
+        SynchronizationContext.ASYNC -> scheduler.scheduleDelayedAsync(delay, retired, block)
       }
 
   private fun runTask(
@@ -65,8 +65,8 @@ class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDisp
       retired: Runnable
   ): AbstractScheduledTask? =
       when (sync) {
-        SynchronizationContext.SYNC -> scheduler.schedule(block, retired)
-        SynchronizationContext.ASYNC -> scheduler.scheduleAsync(block, retired)
+        SynchronizationContext.SYNC -> scheduler.schedule(retired, block)
+        SynchronizationContext.ASYNC -> scheduler.scheduleAsync(retired, block)
       }
 
   class RetiredEntityException : CancellationException()
