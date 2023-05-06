@@ -9,7 +9,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 
@@ -24,9 +23,9 @@ class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDisp
     val task =
         runTaskLater(
             continuation.context.synchronizationContext,
-            Runnable { continuation.apply { resumeUndispatched(Unit) } },
+            { continuation.apply { resumeUndispatched(Unit) } },
             timeMillis / 50,
-            Runnable { continuation.context.cancel(RetiredEntityException()) },
+            { continuation.context.cancel(RetiredEntityException()) },
         )
     if (task === null) {
       continuation.context.cancel(RemovedEntityException())
@@ -43,8 +42,9 @@ class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDisp
     runTask(
         context.synchronizationContext,
         block,
-        Runnable { context.cancel(RetiredEntityException()) },
-    )
+    ) {
+      context.cancel(RetiredEntityException())
+    }
         ?: context.cancel(RemovedEntityException())
   }
 
