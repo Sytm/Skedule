@@ -1,7 +1,7 @@
 package com.okkero.skedule
 
-import com.okkero.skedule.schedulers.AbstractScheduler
-import com.okkero.skedule.schedulers.Schedulers
+import de.md5lukas.schedulers.AbstractScheduler
+import de.md5lukas.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.bukkit.entity.Entity

@@ -12,15 +12,18 @@ plugins {
 group = "de.md5lukas"
 version = "2.0.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-    maven("https://papermc.io/repo/repository/maven-public/")
+allprojects {
+    repositories {
+        mavenCentral()
+        maven("https://papermc.io/repo/repository/maven-public/")
+    }
 }
 
 dependencies {
     compileOnly(libs.folia)
     runtimeOnly(libs.paper)
     api(libs.coroutines)
+    api(project(":schedulers"))
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.mockBukkit)
 }
@@ -36,6 +39,12 @@ kotlin {
     jvmToolchain(libs.versions.jvmToolchain.get().toInt())
 }
 
+spotless {
+    kotlin {
+        ktfmt()
+    }
+}
+
 val sourcesJar by tasks.creating(Jar::class) {
     archiveClassifier.set("sources")
     from(sourceSets.main.get().allSource)
@@ -44,12 +53,6 @@ val sourcesJar by tasks.creating(Jar::class) {
 val javadocJar by tasks.creating(Jar::class) {
     archiveClassifier.set("javadoc")
     from(tasks.dokkaJavadoc)
-}
-
-spotless {
-    kotlin {
-        ktfmt()
-    }
 }
 
 publishing {

@@ -1,7 +1,7 @@
 package com.okkero.skedule
 
-import com.okkero.skedule.schedulers.AbstractScheduledTask
-import com.okkero.skedule.schedulers.AbstractScheduler
+import de.md5lukas.schedulers.AbstractScheduledTask
+import de.md5lukas.schedulers.AbstractScheduler
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
@@ -55,8 +55,8 @@ class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDisp
       retired: Runnable
   ): AbstractScheduledTask? =
       when (sync) {
-        SynchronizationContext.SYNC -> scheduler.scheduleLater(block, delay, retired)
-        SynchronizationContext.ASYNC -> scheduler.scheduleLaterAsync(block, delay, retired)
+        SynchronizationContext.SYNC -> scheduler.scheduleDelayed(block, delay, retired)
+        SynchronizationContext.ASYNC -> scheduler.scheduleDelayedAsync(block, delay, retired)
       }
 
   private fun runTask(
