@@ -51,7 +51,7 @@ sealed interface AbstractScheduler {
 
   fun schedule(retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 
-  fun scheduleAsync(retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
+  fun scheduleAsync(block: Runnable): AbstractScheduledTask
 
   fun scheduleDelayed(
       delay: Long,
@@ -61,9 +61,8 @@ sealed interface AbstractScheduler {
 
   fun scheduleDelayedAsync(
       delay: Long,
-      retired: Runnable = NOOP,
       block: Runnable
-  ): AbstractScheduledTask?
+  ): AbstractScheduledTask
 
   fun scheduleAtFixedRate(
       interval: Long,
@@ -75,9 +74,8 @@ sealed interface AbstractScheduler {
   fun scheduleAtFixedRateAsync(
       interval: Long,
       delay: Long = 0,
-      retired: Runnable = NOOP,
       block: Runnable
-  ): AbstractScheduledTask?
+  ): AbstractScheduledTask
 }
 
 private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
@@ -88,13 +86,13 @@ private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
   override fun schedule(retired: Runnable, block: Runnable) =
       BukkitScheduledTask(scheduler.runTask(plugin, block))
 
-  override fun scheduleAsync(retired: Runnable, block: Runnable) =
+  override fun scheduleAsync(block: Runnable) =
       BukkitScheduledTask(scheduler.runTaskAsynchronously(plugin, block))
 
   override fun scheduleDelayed(delay: Long, retired: Runnable, block: Runnable) =
       BukkitScheduledTask(scheduler.runTaskLater(plugin, block, delay))
 
-  override fun scheduleDelayedAsync(delay: Long, retired: Runnable, block: Runnable) =
+  override fun scheduleDelayedAsync(delay: Long, block: Runnable) =
       BukkitScheduledTask(scheduler.runTaskLaterAsynchronously(plugin, block, delay))
 
   override fun scheduleAtFixedRate(
@@ -105,10 +103,9 @@ private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
   ) = BukkitScheduledTask(scheduler.runTaskTimer(plugin, block, delay, interval))
 
   override fun scheduleAtFixedRateAsync(
-      interval: Long,
-      delay: Long,
-      retired: Runnable,
-      block: Runnable
+    interval: Long,
+    delay: Long,
+    block: Runnable
   ) = BukkitScheduledTask(scheduler.runTaskTimerAsynchronously(plugin, block, delay, interval))
 
   override fun toString() = "BukkitScheduler(plugin=$plugin)"
@@ -119,22 +116,20 @@ private sealed class FoliaSchedulerBase(protected val plugin: Plugin) : Abstract
   private val scheduler
     get() = plugin.server.asyncScheduler
 
-  override fun scheduleAsync(retired: Runnable, block: Runnable): AbstractScheduledTask =
+  override fun scheduleAsync(block: Runnable): AbstractScheduledTask =
       FoliaScheduledTask(scheduler.runNow(plugin, ConsumerRunner(block)))
 
   override fun scheduleDelayedAsync(
-      delay: Long,
-      retired: Runnable,
-      block: Runnable
+    delay: Long,
+    block: Runnable
   ): AbstractScheduledTask =
       FoliaScheduledTask(
           scheduler.runDelayed(plugin, ConsumerRunner(block), delay * 50, TimeUnit.MILLISECONDS))
 
   override fun scheduleAtFixedRateAsync(
-      interval: Long,
-      delay: Long,
-      retired: Runnable,
-      block: Runnable
+    interval: Long,
+    delay: Long,
+    block: Runnable
   ): AbstractScheduledTask =
       FoliaScheduledTask(
           scheduler.runAtFixedRate(
