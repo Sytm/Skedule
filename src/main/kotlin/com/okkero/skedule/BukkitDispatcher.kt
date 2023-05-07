@@ -15,7 +15,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 
 @OptIn(InternalCoroutinesApi::class)
-class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDispatcher(), Delay {
+internal class BukkitDispatcher(private val scheduler: AbstractScheduler) :
+    CoroutineDispatcher(), Delay {
 
   private val asyncDelegate
     get() = Dispatchers.Default
