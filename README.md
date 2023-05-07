@@ -1,52 +1,76 @@
 # Skedule
-![](https://img.shields.io/nexus/maven-public/me.ddevil/skedule?server=https%3A%2F%2Frepo.lunari.studio)
-![](https://img.shields.io/github/license/BrunoSilvaFreire/Skedule)  
-Please note this is a fork from the original [Skedule](https://github.com/okkero/Skedule).  
+![](https://repo.md5lukas.de/api/badge/latest/releases/de/md5lukas/skedule)
+![](https://img.shields.io/github/license/Sytm/Skedule)  
+Please note this is a fork from the forked [Skedule](https://github.com/BrunoSilvaFreire/Skedule).  
 All instructions in this ReadMe are update with new repositories and artifacts.
 
 The objetives of this fork is:
-* Using Gradle as a build system instead of Maven.
-* Keeping up to date with newer Kotlin versions.
-* Having a faster pull request adoption.
-* Maintaining a repository with `sources` and `javadoc` jars. 
+* Don't use the continuation shenanigans of the original and instead control the dispatcher via coroutine context elements
 
-Skedule is a small coroutine library for the BukkitScheduler for Bukkit/Spigot plugin developers using Kotlin
+Skedule is a small coroutine library for the [AbstractSchedulers](https://github.com/Sytm/Skedule/tree/master/schedulers)
+for Bukkit/Spigot/Folia plugin developers using Kotlin.
 
 Tired of designing complex BukkitRunnables to meet your needs? Do you find yourself in [Callback Hell](http://callbackhell.com/) a tad too often?
 Fret no more, for with Kotlin's coroutines and this nifty little utility, you will be scheduling tasks like never before!
 
 ## How to use Skedule?
-From here on, assume the following is defined:
+
+To get an overview of the API take a look at the [KDocs](https://repo.md5lukas.de/javadoc/releases/de/md5lukas/skedule/2.0.0/raw/index.html)
+
+### Asynchronous tasks
+We often find ourselves
+having to do I/O or query a database, or we might have to do some long and costly operations. In all of
+these cases, so as to not block the game thread, we want to schedule an asynchronous task. Skedule supports
+this. To schedule any task with Skedule, a SynchronizationContext needs to be provided. If you do not provide
+a SynchronizationContext, `ASYNC` is inferred. If you want to schedule synchronous tasks with Skedule, you
+need to explicitly pass `SYNC`:
 ```kotlin
-val scheduler = Bukkit.getScheduler()
+plugin.skedule {
+    Bukkit.broadcastMessage("Doing some heavy work off the main thread")
+    //Do costly operation
+}
+```
+You can also switch back and forth between sync and async execution:
+```kotlin
+plugin.skedule {
+    Bukkit.broadcastMessage("Doing some heavy work off the main thread")
+    //Do costly operation off the main thread
+    switchContext(SynchronizationContext.SYNC)
+    //Do stuff on the main thread
+    switchContext(SynchronizationContext.ASYNC)
+    //Do more costly stuff off the main thread
+}
 ```
 
-### The simplest form
+### Delays
+To suspend the coroutine for a given amount of time we use the default `delay(t)` implementation of the
+coroutines library. Due to the fact that this function takes milliseconds as time delay, we must convert our timings
+to milliseconds. Internally this value is again divided by 50 and submitted to the BukkitScheduler.
+
 The simplest example looks like this:
 ```kotlin
-//scheduler and plugin are assumed to be defined
-scheduler.schedule(plugin) {
-    waitFor(40)
-    Bukkit.broadcastMessage("Waited 40 ticks")
+plugin.skedule(SynchronizationContext.SYNC) {
+    delay(40 * 50) // or 2000
+    Bukkit.broadcastMessage("Waited 40 ticks or 2 seconds")
 }
 ```
 Of course, this isn't very useful, and doesn't really showcase what Skedule is capable of.
 So here is a more useful example:
 ```kotlin
-scheduler.schedule(plugin) {
+plugin.skedule(SynchronizationContext.SYNC) {
     Bukkit.broadcastMessage("Waited 0 ticks")
-    waitFor(20)
+    delay(1000)
     Bukkit.broadcastMessage("Waited 20 ticks")
-    waitFor(20)
+    delay(1000)
     Bukkit.broadcastMessage("Waited 40 ticks")
-    waitFor(20)
+    delay(1000)
     Bukkit.broadcastMessage("Waited 60 ticks")
 }
 ```
 This may look like procedural code that will block the main server thread, but it really isn't.
-The extension method `schedule` starts a coroutine. At each of the waitFor calls the coroutine is suspended,
+The extension method `schedule` starts a coroutine. At each of the delay calls the coroutine is suspended,
 a task is scheduled, and the rest of the coroutine is set aside for continuation at a later point
-(40 game ticks in the future in this case). After this, control is yielded back to the caller (your plugin).
+(20 game ticks in the future in this case). After this, control is yielded back to the caller (your plugin).
 From there, the server carries on doing whatever it was doing, until the 40 ticks have passed, after which
 the coroutine will continue until suspended again, or finished.
 
@@ -60,136 +84,23 @@ for-loop:
 scheduler.schedule(plugin) {
     for (i in 10 downTo 1) {
         Bukkit.broadcastMessage("Time left: $i sec...")
-        waitFor(20)
+        delay(1000)
     }
     Bukkit.broadcastMessage("Game starts now!")
 }
 ```
 This example really shows where Skedule is at its most powerful.
 
-### Repeating vs non-repeating
-Take a look at the examples above one more time. They all share one common drawback, and it may not be
-obvious just by looking at them. At each suspension point (`waitFor`) a new task is scheduled for the delay.
-Every single time. This may not be desirable in all cases. Many a time - like in the for-loop example
-above - it makes much more sense to schedule a single repeating task to run over and over. In Skedule, you
-can tell a coroutine to schedule a repeating task, and at each suspension point, wait until the next execution
-of the task before continuing. To do this, you need to use the `repeating` method:
-```kotlin
-scheduler.schedule(plugin) {
-    repeating(20)
-    for (i in 10 downTo 1) {
-        Bukkit.broadcastMessage("Time left: $i sec...")
-        yield() //wait for next iteration
-    }
-    Bukkit.broadcastMessage("Game starts now!")
-}
-```
-Here, we tell the coroutine to schedule a repeating task with a period of 20 ticks. `yield` is a suspension point.
-Each time this it called, the coroutine will suspend until the next iteration of the repeating task, which in
-our case is 20 ticks in the future. This approach imposes less of an overhead, since behind the scenes only one
-task is scheduled to run repeatedly. The task will, of course, be automatically cancelled when (if ever) the
-coroutine returns. It won't be left hanging.
+### Adding the dependencies to your project
 
-You can also use `waitFor` in a repeating-task coroutine. The behaviour then is defined not as waiting exactly
-the specified amount of ticks, but as waiting **at least** the specified amount of ticks. More specifically, calling
-`waitFor(n)` will suspend the coroutine for n ticks plus the ticks remaining until the next iteration of the
-repeating task. `waitFor` will also return the total amount of ticks waited. Example:
 ```kotlin
-scheduler.schedule(plugin) {
-    repeating(20)
-    val waited = waitFor(45)
-    Bukkit.broadcastMessage("$waited") //broadcasts "60"
-}
-```
-
-### Asynchronous tasks
-The Bukkit scheduler isn't all about scheduling tasks on the main game thread. We often find ourselves
-having to do I/O or query a database, or we might have to do some long and costly operations. In all of
-these cases, so as to not block the game thread, we want to schedule an asynchronous task. Skedule supports
-this. To schedule any task with Skedule, a SynchronizationContext needs to be provided. If you do not provide
-a SynchronizationContext, `SYNC` is inferred. If you want to schedule asynchronous tasks with Skedule, you
-need to explicitly pass `ASYNC`:
-```kotlin
-scheduler.schedule(plugin, SynchronizationContext.ASYNC) {
-    Bukkit.broadcastMessage("Doing some heavy work off the main thread")
-    //Do costly operation
-}
-```
-You can also switch back and forth between sync and async execution:
-```kotlin
-scheduler.schedule(plugin, SynchronizationContext.ASYNC) { //ASYNC here specifies the initial context
-    Bukkit.broadcastMessage("Doing some heavy work off the main thread")
-    //Do costly operation off the main thread
-    switchContext(SynchronizationContext.SYNC)
-    //Do stuff on the main thread
-    switchContext(SynchronizationContext.ASYNC)
-    //Do more costly stuff off the main thread
-}
-```
-
-### CoroutineDispatcher
-Skedule also comes with a Bukkit `CoroutineDispatcher` for use with the `kotlinx.coroutines` library. Use it like any old
-`CoroutineContext`:
-```kotlin
-    //sync:
-    launch(BukkitDispatcher(this)) {
-        delay(3, TimeUnit.SECONDS)
-        Bukkit.broadcastMessage("Waited for 3 seconds") //On sync scheduler thread
-    }
-    
-    //async:
-    launch(BukkitDispatcher(this, async = true)) {
-        delay(3, TimeUnit.SECONDS)
-        Bukkit.broadcastMessage("Waited for 3 seconds") //On async scheduler thread
-    }
-```
-
-You can read more about kotlinx.coroutines here:  
-https://github.com/Kotlin/kotlinx.coroutines
-
-## Where to get Skedule
-### Maven
-```xml
-<repositories>
-    <repository>
-        <id>lunari</id>
-        <url>https://repo.lunari.studio/repository/maven-public/</url>
-    </repository>
-</repositories>
-```
-```xml
-<dependencies>
-    <dependency>
-        <groupId>me.ddevil</groupId>
-        <artifactId>skedule</artifactId>
-        <version>...</version>
-        <scope>compile</scope>
-    </dependency>
-</dependencies>
-```
-### Gradle
-```groovy
 repositories {
-    maven {
-        name = "lunari"
-        url = "https://repo.lunari.studio/repository/maven-public/"
-    }
+  maven("https://repo.md5lukas.de/releases")
 }
 
 dependencies {
-    compile("me.ddevil:skedule:...")
+  // Both need to be shadowed separately
+  implementation("de.md5lukas:skedule:2.0.0")
+  implementation("de.md5lukas:schedulers:1.0.0")
 }
 ```
-
-### Get the Kotlin runtime yourself
-Skedule does not contain the Kotlin runtime (and the reason should be obvious).
-Therefore you must make sure the runtime exists in the classpath on your server.
-Skedule also uses API from kotlinx-coroutines, so make sure you have that too.
-
-## Not using Kotlin?
-If you're not using Kotlin, this resource won't help you. There is no way to express coroutines in
-Java. However, [TaskChain](https://github.com/aikar/TaskChain) has got you covered. With TaskChain
-you can express your synchronous and asynchronous scheduler calls in a reactive sort of way. It
-comes with a really elaborate library to make your experience smooth.
-
-Head over to [TaskChain](https://github.com/aikar/TaskChain)

@@ -19,8 +19,8 @@ import org.bukkit.scheduler.BukkitTask
 /**
  * Helper Object to provide generic access to the Bukkit and Folia schedulers.
  *
- * On non-Folia servers everything will be handled by the same scheduler, the [BukkitScheduler]. On
- * Folia servers all async schedules are handled by the [AsyncScheduler], while the sync variants
+ * On non-Folia servers everything will be handled by the same scheduler, the [org.bukkit.scheduler.BukkitScheduler].
+ * On Folia servers all async schedules are handled by the [AsyncScheduler], while the sync variants
  * depend on which function is selected to retrieve the [AbstractScheduler].
  * - [global] uses the [GlobalRegionScheduler]
  * - [region] uses the [RegionScheduler]

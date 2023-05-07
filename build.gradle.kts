@@ -50,6 +50,16 @@ val sourcesJar by tasks.creating(Jar::class) {
     from(sourceSets.main.get().allSource)
 }
 
+tasks.dokkaHtml {
+    dokkaSourceSets {
+        configureEach {
+            val majorVersion = libs.versions.paper.get().split('.').let { "${it[0]}.${it[1]}" }
+            externalDocumentationLink("https://jd.papermc.io/paper/$majorVersion/", "https://jd.papermc.io/paper/$majorVersion/element-list")
+            externalDocumentationLink("https://jd.papermc.io/folia/$majorVersion/", "https://jd.papermc.io/folia/$majorVersion/element-list")
+        }
+    }
+}
+
 val javadocJar by tasks.creating(Jar::class) {
     archiveClassifier.set("javadoc")
     from(tasks.dokkaHtml)
