@@ -7,13 +7,18 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 
 @OptIn(InternalCoroutinesApi::class)
 class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDispatcher(), Delay {
+
+  private val asyncDelegate
+    get() = Dispatchers.Default
 
   @OptIn(ExperimentalCoroutinesApi::class)
   override fun scheduleResumeAfterDelay(
@@ -34,13 +39,27 @@ class BukkitDispatcher(private val scheduler: AbstractScheduler) : CoroutineDisp
     continuation.invokeOnCancellation { task.cancel() }
   }
 
+  override fun dispatchYield(context: CoroutineContext, block: Runnable) {
+    if (context.synchronizationContext === SynchronizationContext.ASYNC) {
+      asyncDelegate.dispatchYield(context, block)
+    } else {
+      super.dispatchYield(context, block)
+    }
+  }
+
   override fun dispatch(context: CoroutineContext, block: Runnable) {
     if (!context.isActive) {
       return
     }
 
+    val synchronizationContext = context.synchronizationContext
+
+    if (synchronizationContext === SynchronizationContext.ASYNC) {
+      return asyncDelegate.dispatch(context, block)
+    }
+
     runTask(
-        context.synchronizationContext,
+        synchronizationContext,
         block,
     ) {
       context.cancel(RetiredEntityException())
