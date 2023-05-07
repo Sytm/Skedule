@@ -17,6 +17,13 @@ allprojects {
         mavenCentral()
         maven("https://papermc.io/repo/repository/maven-public/")
     }
+
+    tasks.withType<KotlinCompile> {
+        compilerOptions.freeCompilerArgs.addAll(
+          "-Xjvm-default=all",
+          "-Xlambdas=indy",
+        )
+    }
 }
 
 dependencies {
@@ -26,13 +33,6 @@ dependencies {
     api(project(":schedulers"))
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.mockBukkit)
-}
-
-tasks.withType<KotlinCompile> {
-    compilerOptions.freeCompilerArgs.addAll(
-        "-Xjvm-default=all",
-        "-Xlambdas=indy",
-    )
 }
 
 kotlin {

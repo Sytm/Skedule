@@ -7,6 +7,7 @@ import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
+import java.util.concurrent.Executor
 
 object Schedulers {
   private val isFolia =
@@ -40,6 +41,18 @@ object Schedulers {
 }
 
 sealed interface AbstractScheduler {
+
+  fun asExecutor(async: Boolean = true) =
+    if (async) {
+      Executor {
+        scheduleAsync(NOOP, it)
+      }
+    } else {
+      Executor {
+        schedule(NOOP, it)
+      }
+    }
+
 
   fun schedule(retired: Runnable = NOOP, block: Runnable): AbstractScheduledTask?
 
