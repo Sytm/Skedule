@@ -1,22 +1,28 @@
 package com.okkero.skedule
 
+import de.md5lukas.schedulers.AbstractScheduler
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
 
-internal class BukkitSchedulerSynchronizationContext(
+internal class BukkitContext(
+    var scheduler: AbstractScheduler,
     var sync: SynchronizationContext,
 ) : CoroutineContext.Element {
 
-  object Key : CoroutineContext.Key<BukkitSchedulerSynchronizationContext>
+  object Key : CoroutineContext.Key<BukkitContext>
 
-  override val key: CoroutineContext.Key<BukkitSchedulerSynchronizationContext>
+  override val key: CoroutineContext.Key<BukkitContext>
     get() = Key
 }
 
-internal val CoroutineContext.bukkitSchedulerSynchronizationContext
+internal val CoroutineContext.bukkitContextNullable
+  get() = this[BukkitContext.Key]
+
+internal val CoroutineContext.bukkitContext
   get() =
-      this[BukkitSchedulerSynchronizationContext.Key]
+      bukkitContextNullable
           ?: throw IllegalStateException(
               "Synchronization state access and switches can only be performed on Skedule-launched coroutines")
 
@@ -26,7 +32,7 @@ internal val CoroutineContext.bukkitSchedulerSynchronizationContext
  * @throws IllegalStateException If coroutine is not a Skedule coroutine
  */
 val CoroutineContext.synchronizationContext
-  get() = bukkitSchedulerSynchronizationContext.sync
+  get() = bukkitContext.sync
 
 /**
  * Runs the given block with the provided synchronization context and reverts to the previous
@@ -60,13 +66,33 @@ suspend inline fun <T> withSynchronizationContext(
  * Switches the synchronization context of this coroutine to the new one
  *
  * @param newContext The context to switch to
+ * @param immediate Perform the context switch immediately. Can be used before [delay] to avoid
+ *   double dispatch.
  * @throws IllegalStateException If coroutine is not a Skedule coroutine
  */
-suspend fun switchContext(newContext: SynchronizationContext) {
-  val context = coroutineContext.bukkitSchedulerSynchronizationContext
+suspend fun switchContext(newContext: SynchronizationContext, immediate: Boolean = true) {
+  val context = coroutineContext.bukkitContext
 
   if (context.sync !== newContext) {
     context.sync = newContext
+    if (immediate) {
+      yield()
+    }
+  }
+}
+
+/**
+ * Switches the scheduler executing the coroutine
+ *
+ * @param newScheduler The scheduler to switch to
+ * @param immediate Perform the scheduler switch immediately. Can be used before [delay] to avoid
+ *   double dispatch.
+ * @throws IllegalStateException If coroutine is not a Skedule coroutine
+ */
+suspend fun switchScheduler(newScheduler: AbstractScheduler, immediate: Boolean = true) {
+  coroutineContext.bukkitContext.scheduler = newScheduler
+
+  if (immediate) {
     yield()
   }
 }

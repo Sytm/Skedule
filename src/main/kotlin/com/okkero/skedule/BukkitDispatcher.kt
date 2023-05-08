@@ -1,7 +1,6 @@
 package com.okkero.skedule
 
 import de.md5lukas.schedulers.AbstractScheduledTask
-import de.md5lukas.schedulers.AbstractScheduler
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
@@ -15,8 +14,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 
 @OptIn(InternalCoroutinesApi::class)
-internal class BukkitDispatcher(private val scheduler: AbstractScheduler) :
-    CoroutineDispatcher(), Delay {
+internal object BukkitDispatcher : CoroutineDispatcher(), Delay {
 
   private val asyncDelegate
     get() = Dispatchers.Default
@@ -26,9 +24,15 @@ internal class BukkitDispatcher(private val scheduler: AbstractScheduler) :
       timeMillis: Long,
       continuation: CancellableContinuation<Unit>
   ) {
+    val bukkitContext = continuation.context.bukkitContextNullable
+
+    if (bukkitContext === null) {
+      continuation.context.cancel(MissingBukkitContextException())
+      return
+    }
+
     val task =
-        runTaskLater(
-            continuation.context.synchronizationContext,
+        bukkitContext.runTaskLater(
             { continuation.apply { resumeUndispatched(Unit) } },
             timeMillis / 50,
             { continuation.context.cancel(RetiredEntityException()) },
@@ -41,7 +45,14 @@ internal class BukkitDispatcher(private val scheduler: AbstractScheduler) :
   }
 
   override fun dispatchYield(context: CoroutineContext, block: Runnable) {
-    if (context.synchronizationContext === SynchronizationContext.ASYNC) {
+    val bukkitContext = context.bukkitContextNullable
+
+    if (bukkitContext === null) {
+      context.cancel(MissingBukkitContextException())
+      return
+    }
+
+    if (bukkitContext.sync === SynchronizationContext.ASYNC) {
       asyncDelegate.dispatchYield(context, block)
     } else {
       super.dispatchYield(context, block)
@@ -53,14 +64,18 @@ internal class BukkitDispatcher(private val scheduler: AbstractScheduler) :
       return
     }
 
-    val synchronizationContext = context.synchronizationContext
+    val bukkitContext = context.bukkitContextNullable
 
-    if (synchronizationContext === SynchronizationContext.ASYNC) {
+    if (bukkitContext === null) {
+      context.cancel(MissingBukkitContextException())
+      return
+    }
+
+    if (bukkitContext.sync === SynchronizationContext.ASYNC) {
       return asyncDelegate.dispatch(context, block)
     }
 
-    runTask(
-        synchronizationContext,
+    bukkitContext.runTask(
         block,
     ) {
       context.cancel(RetiredEntityException())
@@ -68,8 +83,7 @@ internal class BukkitDispatcher(private val scheduler: AbstractScheduler) :
         ?: context.cancel(RemovedEntityException())
   }
 
-  private fun runTaskLater(
-      sync: SynchronizationContext,
+  private fun BukkitContext.runTaskLater(
       block: Runnable,
       delay: Long,
       retired: Runnable
@@ -79,16 +93,13 @@ internal class BukkitDispatcher(private val scheduler: AbstractScheduler) :
         SynchronizationContext.ASYNC -> scheduler.scheduleDelayedAsync(delay, block)
       }
 
-  private fun runTask(
-      sync: SynchronizationContext,
-      block: Runnable,
-      retired: Runnable
-  ): AbstractScheduledTask? =
+  private fun BukkitContext.runTask(block: Runnable, retired: Runnable): AbstractScheduledTask? =
       when (sync) {
         SynchronizationContext.SYNC -> scheduler.schedule(retired, block)
         SynchronizationContext.ASYNC -> scheduler.scheduleAsync(block)
       }
 
+  class MissingBukkitContextException : CancellationException()
   class RetiredEntityException : CancellationException()
   class RemovedEntityException : CancellationException()
 }

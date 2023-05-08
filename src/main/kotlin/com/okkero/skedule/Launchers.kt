@@ -59,9 +59,7 @@ fun Plugin.skedule(
 fun AbstractScheduler.skedule(
     sync: SynchronizationContext = SynchronizationContext.ASYNC,
     block: suspend CoroutineScope.() -> Unit,
-): Job =
-    CoroutineScope(BukkitDispatcher(this))
-        .launch(context = BukkitSchedulerSynchronizationContext(sync), block = block)
+): Job = CoroutineScope(BukkitDispatcher).launch(context = BukkitContext(this, sync), block = block)
 
 /**
  * Starts a new coroutine and returns its result as an implementation of [Deferred].
@@ -111,8 +109,7 @@ fun <T> AbstractScheduler.async(
     sync: SynchronizationContext = SynchronizationContext.ASYNC,
     block: suspend CoroutineScope.() -> T,
 ): Deferred<T> =
-    CoroutineScope(BukkitDispatcher(this))
-        .async(context = BukkitSchedulerSynchronizationContext(sync), block = block)
+    CoroutineScope(BukkitDispatcher).async(context = BukkitContext(this, sync), block = block)
 
 /**
  * Starts a new coroutine and returns its result as an implementation of [CompletableFuture].
@@ -162,5 +159,4 @@ fun <T> AbstractScheduler.future(
     sync: SynchronizationContext = SynchronizationContext.ASYNC,
     block: suspend CoroutineScope.() -> T,
 ): CompletableFuture<T> =
-    CoroutineScope(BukkitDispatcher(this))
-        .future(context = BukkitSchedulerSynchronizationContext(sync), block = block)
+    CoroutineScope(BukkitDispatcher).future(context = BukkitContext(this, sync), block = block)
