@@ -6,7 +6,16 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
 
-internal class BukkitContext(
+/**
+ * The BukkitContext holds information for the dispatcher to know what to do.
+ *
+ * Only useful inside coroutines that have been dispatched inside a coroutine, for example when
+ * nesting contexts
+ *
+ * @property scheduler The scheduler the coroutine is dispatched to
+ * @property sync The synchronization context used by the dispatcher
+ */
+class BukkitContext(
     var scheduler: AbstractScheduler,
     var sync: SynchronizationContext,
 ) : CoroutineContext.Element {
