@@ -86,6 +86,11 @@ object Schedulers {
 sealed interface AbstractScheduler {
 
   /**
+   * The plugin that the scheduler registers tasks with
+   */
+  val plugin: Plugin
+
+  /**
    * Provides a view of this scheduler as an [Executor]. The executor either delegates to [schedule]
    * or [scheduleAsync], depending on the provided argument
    */
@@ -179,7 +184,7 @@ sealed interface AbstractScheduler {
   ): AbstractScheduledTask
 }
 
-private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
+private class BukkitScheduler(override val plugin: Plugin) : AbstractScheduler {
 
   private val scheduler
     get() = plugin.server.scheduler
@@ -209,7 +214,7 @@ private class BukkitScheduler(private val plugin: Plugin) : AbstractScheduler {
   override fun toString() = "BukkitScheduler(plugin=$plugin)"
 }
 
-private sealed class FoliaSchedulerBase(protected val plugin: Plugin) : AbstractScheduler {
+private sealed class FoliaSchedulerBase(override val plugin: Plugin) : AbstractScheduler {
 
   private val scheduler
     get() = plugin.server.asyncScheduler

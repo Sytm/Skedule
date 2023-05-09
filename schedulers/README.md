@@ -32,6 +32,24 @@ scheduler.scheduleAsync {
 The created instances of the `AbstractScheduler` can be stored in some variable or the calls to
 the schedule functions be directly chained.
 
+### Executors
+
+When using `CompletableFuture`s in your project, you might want to do something in the "main" server thread
+(depending on server implementation) with the result, but for that you need to provide an executor.
+
+```kotlin
+lateinit var scheduler: AbstractScheduler
+
+// The returned executors are async by default
+val executor = scheduler.asExecutor(async = false)
+val future: CompletableFuture<String> = doSomethingExpensiveAsync()
+
+// Then accept async is called that way because the execution of the consumer is
+// asynchronous to the thread that calculated the result, not related to Bukkit sync/async
+future.thenAcceptAsync(executor) { string -> 
+  // Do something on the "main" thread with the string
+}
+```
 
 
 ### Adding the dependency to your project

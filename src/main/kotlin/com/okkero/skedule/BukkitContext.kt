@@ -4,13 +4,14 @@ import de.md5lukas.schedulers.AbstractScheduler
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 
 /**
- * The BukkitContext holds information for the dispatcher to know what to do.
+ * The BukkitContext holds information for the [BukkitDispatcher] to know what to do.
  *
- * Only useful inside coroutines that have been dispatched inside a coroutine, for example when
- * nesting contexts
+ * Only useful inside coroutines that have been started inside another coroutine, for example when
+ * using [launch]
  *
  * @property scheduler The scheduler the coroutine is dispatched to
  * @property sync The synchronization context used by the dispatcher
@@ -20,14 +21,14 @@ class BukkitContext(
     var sync: SynchronizationContext,
 ) : CoroutineContext.Element {
 
-  object Key : CoroutineContext.Key<BukkitContext>
+  companion object Key : CoroutineContext.Key<BukkitContext>
 
   override val key: CoroutineContext.Key<BukkitContext>
     get() = Key
 }
 
 internal val CoroutineContext.bukkitContextNullable
-  get() = this[BukkitContext.Key]
+  get() = this[BukkitContext]
 
 internal val CoroutineContext.bukkitContext
   get() =

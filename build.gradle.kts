@@ -27,8 +27,7 @@ allprojects {
 }
 
 dependencies {
-    compileOnly(libs.folia)
-    runtimeOnly(libs.paper)
+    api(libs.paper)
     api(libs.coroutines)
     api(project(":schedulers"))
     testImplementation(kotlin("test-junit"))
