@@ -14,6 +14,10 @@ dependencies {
   runtimeOnly(libs.paper)
 }
 
+kotlin {
+  jvmToolchain(libs.versions.jvmToolchain.get().toInt())
+}
+
 val sourcesJar by tasks.creating(Jar::class) {
   archiveClassifier.set("sources")
   from(sourceSets.main.get().allSource)
