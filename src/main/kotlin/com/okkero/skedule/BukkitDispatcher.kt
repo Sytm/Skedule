@@ -3,6 +3,7 @@ package com.okkero.skedule
 import de.md5lukas.schedulers.AbstractScheduledTask
 import de.md5lukas.schedulers.AbstractScheduler
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineDispatcher
@@ -13,17 +14,29 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
+import org.bukkit.plugin.Plugin
 
 /**
  * Dispatcher that dispatches [SynchronizationContext.SYNC] coroutines on the
  * [BukkitContext.scheduler] and [SynchronizationContext.ASYNC] coroutines on [Dispatchers.Default].
- * Calling [kotlinx.coroutines.delay] in [SynchronizationContext.ASYNC] will also schedule on [BukkitContext.scheduler].
+ * Calling [kotlinx.coroutines.delay] in [SynchronizationContext.ASYNC] will also schedule on
+ * [BukkitContext.scheduler].
+ *
+ * If the Dispatcher decides to cancel the coroutine, the coroutine will be dispatched to
+ * [Dispatchers.IO] for cleanup. Reasons for cancellation:
+ * - The [Plugin] is no longer enabled
+ * - The [CoroutineContext] does not contain [BukkitContext]
+ * - The Entity is removed before the dispatch could happen
+ * - The Entity has been retired after the dispatch
  */
 @OptIn(InternalCoroutinesApi::class)
 object BukkitDispatcher : CoroutineDispatcher(), Delay {
 
   private val asyncDelegate
     get() = Dispatchers.Default
+
+  private val cancelDelegate
+    get() = Dispatchers.IO
 
   @OptIn(ExperimentalCoroutinesApi::class)
   override fun scheduleResumeAfterDelay(
@@ -33,9 +46,15 @@ object BukkitDispatcher : CoroutineDispatcher(), Delay {
     val bukkitContext = continuation.context.bukkitContextNullable
 
     if (bukkitContext === null) {
-      return continuation.context.cancel(missingBukkitContextException())
+      continuation.apply { resumeUndispatchedWithException(missingBukkitContextException()) }
+      return
     } else if (!bukkitContext.scheduler.plugin.isEnabled) {
-      return continuation.context.cancel(disabledPluginException(bukkitContext.scheduler))
+      cancelDelegate.dispatch(EmptyCoroutineContext) {
+        continuation.apply {
+          resumeUndispatchedWithException(disabledPluginException(bukkitContext.scheduler))
+        }
+      }
+      return
     }
 
     val task =
@@ -43,9 +62,21 @@ object BukkitDispatcher : CoroutineDispatcher(), Delay {
             { continuation.apply { resumeUndispatched(Unit) } },
             timeMillis / 50,
         ) {
-          continuation.context.cancel(retiredEntityException(bukkitContext.scheduler))
+          cancelDelegate.dispatch(EmptyCoroutineContext) {
+            continuation.apply {
+              resumeUndispatchedWithException(retiredEntityException(bukkitContext.scheduler))
+            }
+          }
         }
-            ?: return continuation.context.cancel(removedEntityException(bukkitContext.scheduler))
+
+    if (task === null) {
+      cancelDelegate.dispatch(EmptyCoroutineContext) {
+        continuation.apply {
+          resumeUndispatchedWithException(removedEntityException(bukkitContext.scheduler))
+        }
+      }
+      return
+    }
 
     continuation.invokeOnCancellation { task.cancel() }
   }
@@ -55,13 +86,14 @@ object BukkitDispatcher : CoroutineDispatcher(), Delay {
 
     if (bukkitContext === null) {
       context.cancel(missingBukkitContextException())
+      cancelDelegate.dispatch(context, block)
       return
     }
 
     if (bukkitContext.sync === SynchronizationContext.ASYNC) {
       asyncDelegate.dispatchYield(context, block)
     } else {
-      super.dispatchYield(context, block)
+      dispatch(context, block)
     }
   }
 
@@ -73,18 +105,27 @@ object BukkitDispatcher : CoroutineDispatcher(), Delay {
     val bukkitContext = context.bukkitContextNullable
 
     if (bukkitContext === null) {
-      return context.cancel(missingBukkitContextException())
+      context.cancel(missingBukkitContextException())
+      cancelDelegate.dispatch(context, block)
+      return
     } else if (!bukkitContext.scheduler.plugin.isEnabled) {
-      return context.cancel(disabledPluginException(bukkitContext.scheduler))
+      context.cancel(disabledPluginException(bukkitContext.scheduler))
+      cancelDelegate.dispatch(context, block)
+      return
     }
 
     if (bukkitContext.sync === SynchronizationContext.ASYNC) {
-      return asyncDelegate.dispatch(context, block)
+      asyncDelegate.dispatch(context, block)
     } else {
-      bukkitContext.runTask(block) {
-        context.cancel(retiredEntityException(bukkitContext.scheduler))
+      val task =
+          bukkitContext.runTask(block) {
+            context.cancel(retiredEntityException(bukkitContext.scheduler))
+            cancelDelegate.dispatch(context, block)
+          }
+      if (task === null) {
+        context.cancel(removedEntityException(bukkitContext.scheduler))
+        cancelDelegate.dispatch(context, block)
       }
-          ?: context.cancel(removedEntityException(bukkitContext.scheduler))
     }
   }
 
