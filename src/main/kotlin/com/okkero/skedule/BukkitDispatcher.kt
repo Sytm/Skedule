@@ -29,7 +29,7 @@ import org.bukkit.plugin.Plugin
  * - The Entity is removed before the dispatch could happen
  * - The Entity has been retired after the dispatch
  */
-@OptIn(InternalCoroutinesApi::class)
+@OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
 object BukkitDispatcher : CoroutineDispatcher(), Delay {
 
   private val asyncDelegate
@@ -38,7 +38,6 @@ object BukkitDispatcher : CoroutineDispatcher(), Delay {
   private val cancelDelegate
     get() = Dispatchers.IO
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   override fun scheduleResumeAfterDelay(
       timeMillis: Long,
       continuation: CancellableContinuation<Unit>

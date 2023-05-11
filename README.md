@@ -81,7 +81,7 @@ remaining time. With Skedule, this is super easy. No need to create an entirely 
 Runnable and uses mutable state to track how many seconds are left. All you have to do, is use a regular
 for-loop:
 ```kotlin
-scheduler.schedule(plugin) {
+plugin.skedule {
     for (i in 10 downTo 1) {
         Bukkit.broadcastMessage("Time left: $i sec...")
         delay(1000)
@@ -91,7 +91,24 @@ scheduler.schedule(plugin) {
 ```
 This example really shows where Skedule is at its most powerful.
 
-### Adding the dependencies to your project
+### withTimeout
+
+Calls to `withTimeout()` and `withTimeoutOrNull()` do not work (for what ever reason). To work around
+this you can wrap the code in a normal Dispatcher like this:
+
+```kotlin
+plugin.skedule {
+  val result = withContext(Dispatchers.Default) {
+    withTimeoutOrNull(1000) {
+      // Do some computation
+      "Computed result"
+    }
+  }
+  // Do something with the computed result
+}
+```
+
+## Adding the dependencies to your project
 
 ```kotlin
 repositories {
