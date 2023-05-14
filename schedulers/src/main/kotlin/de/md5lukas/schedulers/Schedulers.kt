@@ -89,7 +89,7 @@ interface AbstractScheduler {
    * Provides a view of this scheduler as an [Executor]. The executor either delegates to [schedule]
    * or [scheduleAsync], depending on the provided argument
    */
-  fun asExecutor(async: Boolean = true) =
+  fun asExecutor(async: Boolean = false) =
       if (async) {
         Executor { scheduleAsync(it) }
       } else {

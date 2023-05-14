@@ -40,8 +40,8 @@ When using `CompletableFuture`s in your project, you might want to do something 
 ```kotlin
 lateinit var scheduler: AbstractScheduler
 
-// The returned executors are async by default
-val executor = scheduler.asExecutor(async = false)
+// The returned executors are sync by default
+val executor = scheduler.asExecutor()
 val future: CompletableFuture<String> = doSomethingExpensiveAsync()
 
 // Then accept async is called that way because the execution of the consumer is
