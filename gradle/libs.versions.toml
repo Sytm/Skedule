@@ -1,12 +1,12 @@
 [versions]
-kotlin = "1.8.20"
+kotlin = "1.8.21"
 jvmToolchain = "17"
 paper = "1.19.4-R0.1-SNAPSHOT"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 folia = { group = "dev.folia", name = "folia-api", version.ref = "paper" }
-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.0-RC" }
+coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1" }
 
 # Test dependencies
 mockBukkit = { group = "com.github.seeseemelk", name = "MockBukkit-v1.19", version = "2.+" }
