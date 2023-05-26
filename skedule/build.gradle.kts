@@ -7,7 +7,7 @@ plugins {
 }
 
 group = rootProject.group
-version = "2.0.0-SNAPSHOT"
+version = "2.0.0"
 
 dependencies {
     api(libs.paper)
