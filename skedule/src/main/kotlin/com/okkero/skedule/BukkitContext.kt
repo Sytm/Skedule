@@ -1,11 +1,12 @@
 package com.okkero.skedule
 
 import de.md5lukas.schedulers.AbstractScheduler
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import kotlin.coroutines.ContinuationInterceptor
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 
 /**
  * The BukkitContext holds information for the [BukkitDispatcher] to know what to do.
@@ -36,6 +37,13 @@ internal val CoroutineContext.bukkitContext
           ?: throw IllegalStateException(
               "Synchronization state access and switches can only be performed on Skedule-launched coroutines")
 
+internal fun CoroutineContext.ensureBukkitDispatcherUsed() {
+  if (this[ContinuationInterceptor] !is BukkitDispatcher) {
+    throw IllegalStateException(
+        "Immediate synchronization and scheduler switches can only performed if the active dispatcher is the BukkitDispatcher")
+  }
+}
+
 /**
  * Retrieves the current synchronization context of the provided coroutine context
  *
@@ -55,7 +63,7 @@ val CoroutineContext.synchronizationContext
  */
 suspend inline fun <T> withSynchronizationContext(
     newContext: SynchronizationContext,
-    block: () -> T
+    block: () -> T,
 ): T {
   val oldContext = coroutineContext.synchronizationContext
 
@@ -86,6 +94,7 @@ suspend fun switchContext(newContext: SynchronizationContext, immediate: Boolean
   if (context.sync !== newContext) {
     context.sync = newContext
     if (immediate) {
+      coroutineContext.ensureBukkitDispatcherUsed()
       yield()
     }
   }
@@ -103,6 +112,7 @@ suspend fun switchScheduler(newScheduler: AbstractScheduler, immediate: Boolean 
   coroutineContext.bukkitContext.scheduler = newScheduler
 
   if (immediate) {
+    coroutineContext.ensureBukkitDispatcherUsed()
     yield()
   }
 }

@@ -35,6 +35,10 @@ object BukkitDispatcher : CoroutineDispatcher(), Delay {
   private val asyncDelegate
     get() = Dispatchers.Default
 
+  /**
+   * Using [Dispatchers.IO] as delegate for canceling because that is what is used by
+   * [kotlinx.coroutines.asCoroutineDispatcher]
+   */
   private val cancelDelegate
     get() = Dispatchers.IO
 

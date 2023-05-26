@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     with (libs.plugins) {
         alias(kotlin)
@@ -10,20 +8,6 @@ plugins {
 
 group = rootProject.group
 version = "2.0.0-SNAPSHOT"
-
-allprojects {
-    repositories {
-        mavenCentral()
-        maven("https://papermc.io/repo/repository/maven-public/")
-    }
-
-    tasks.withType<KotlinCompile> {
-        compilerOptions.freeCompilerArgs.addAll(
-          "-Xjvm-default=all",
-          "-Xlambdas=indy",
-        )
-    }
-}
 
 dependencies {
     api(libs.paper)
