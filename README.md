@@ -215,6 +215,6 @@ repositories {
 dependencies {
   // Both need to be shadowed separately
   implementation("de.md5lukas:skedule:2.0.0")
-  implementation("de.md5lukas:schedulers:1.0.0")
+  implementation("de.md5lukas:schedulers:1.0.1")
 }
 ```

@@ -16,7 +16,7 @@ Schedulers.entity(plugin, entity) // When the scheduler is used for a specific e
 
 On that instance we can call the various schedule functions.
 
-To view all available methods take a look at the [KDocs](https://repo.md5lukas.de/javadoc/releases/de/md5lukas/schedulers/1.0.0/raw/index.html)
+To view all available methods take a look at the [KDocs](https://repo.md5lukas.de/javadoc/releases/de/md5lukas/schedulers/1.0.1/raw/index.html)
 ```kotlin
 lateinit var scheduler: AbstractScheduler
 
@@ -60,6 +60,6 @@ repositories {
 }
 
 dependencies {
-  implementation("de.md5lukas:schedulers:1.0.0")
+  implementation("de.md5lukas:schedulers:1.0.1")
 }
 ```

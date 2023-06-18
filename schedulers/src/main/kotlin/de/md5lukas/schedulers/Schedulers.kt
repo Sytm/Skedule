@@ -30,7 +30,7 @@ object Schedulers {
    */
   val isFolia =
       try {
-        Class.forName("io.papermc.paper.threadedregions.scheduler.EntityScheduler")
+        Class.forName("io.papermc.paper.threadedregions.RegionizedServer")
         true
       } catch (e: ClassNotFoundException) {
         false
