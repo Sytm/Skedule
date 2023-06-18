@@ -11,14 +11,14 @@ import java.util.concurrent.Executor
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.plugin.Plugin
+import org.bukkit.scheduler.BukkitScheduler
 
 /**
  * Helper Object to provide generic access to the Bukkit and Folia schedulers.
  *
- * On non-Folia servers everything will be handled by the same scheduler, the
- * [org.bukkit.scheduler.BukkitScheduler]. On Folia servers all async schedules are handled by the
- * [AsyncScheduler], while the sync variants depend on which function is selected to retrieve the
- * [AbstractScheduler].
+ * On non-Folia servers everything will be handled by the same scheduler, the [BukkitScheduler]. On
+ * Folia servers all async schedules are handled by the [AsyncScheduler], while the sync variants
+ * depend on which function is selected to retrieve the [AbstractScheduler].
  * - [global] uses the [GlobalRegionScheduler]
  * - [region] uses the [RegionScheduler]
  * - [entity] uses the [EntityScheduler]
@@ -130,7 +130,7 @@ interface AbstractScheduler {
   fun scheduleDelayed(
       delay: Long,
       retired: Runnable? = null,
-      block: Runnable
+      block: Runnable,
   ): AbstractScheduledTask?
 
   /**
@@ -162,7 +162,7 @@ interface AbstractScheduler {
       interval: Long,
       delay: Long = 0,
       retired: Runnable? = null,
-      block: Runnable
+      block: Runnable,
   ): AbstractScheduledTask?
 
   /**
@@ -180,7 +180,7 @@ interface AbstractScheduler {
   fun scheduleAtFixedRateAsync(
       interval: Long,
       delay: Long = 0,
-      block: Runnable
+      block: Runnable,
   ): AbstractScheduledTask
 }
 

@@ -9,32 +9,40 @@ internal class BukkitScheduler(override val plugin: Plugin) : AbstractScheduler 
     get() = plugin.server.scheduler
 
   override fun schedule(retired: Runnable?, block: Runnable): AbstractScheduledTask =
-    BukkitScheduledTask(scheduler.runTask(plugin, block))
+      BukkitScheduledTask(scheduler.runTask(plugin, block))
 
   override fun scheduleAsync(block: Runnable): AbstractScheduledTask =
-    BukkitScheduledTask(scheduler.runTaskAsynchronously(plugin, block))
+      BukkitScheduledTask(scheduler.runTaskAsynchronously(plugin, block))
 
-  override fun scheduleDelayed(delay: Long, retired: Runnable?, block: Runnable): AbstractScheduledTask =
-    BukkitScheduledTask(scheduler.runTaskLater(plugin, block, delay))
+  override fun scheduleDelayed(
+      delay: Long,
+      retired: Runnable?,
+      block: Runnable,
+  ): AbstractScheduledTask = BukkitScheduledTask(scheduler.runTaskLater(plugin, block, delay))
 
   override fun scheduleDelayedAsync(delay: Long, block: Runnable): AbstractScheduledTask =
-    BukkitScheduledTask(scheduler.runTaskLaterAsynchronously(plugin, block, delay))
+      BukkitScheduledTask(scheduler.runTaskLaterAsynchronously(plugin, block, delay))
 
   override fun scheduleAtFixedRate(
-    interval: Long,
-    delay: Long,
-    retired: Runnable?,
-    block: Runnable
-  ): AbstractScheduledTask = BukkitScheduledTask(scheduler.runTaskTimer(plugin, block, delay, interval))
+      interval: Long,
+      delay: Long,
+      retired: Runnable?,
+      block: Runnable,
+  ): AbstractScheduledTask =
+      BukkitScheduledTask(scheduler.runTaskTimer(plugin, block, delay, interval))
 
-  override fun scheduleAtFixedRateAsync(interval: Long, delay: Long, block: Runnable): AbstractScheduledTask =
-    BukkitScheduledTask(scheduler.runTaskTimerAsynchronously(plugin, block, delay, interval))
+  override fun scheduleAtFixedRateAsync(
+      interval: Long,
+      delay: Long,
+      block: Runnable,
+  ): AbstractScheduledTask =
+      BukkitScheduledTask(scheduler.runTaskTimerAsynchronously(plugin, block, delay, interval))
 
   override fun toString() = "BukkitScheduler(plugin=$plugin)"
 }
 
 private class BukkitScheduledTask(
-  private val task: BukkitTask,
+    private val task: BukkitTask,
 ) : AbstractScheduledTask {
   override fun cancel() {
     task.cancel()

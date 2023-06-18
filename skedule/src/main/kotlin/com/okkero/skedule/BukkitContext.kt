@@ -1,12 +1,12 @@
 package com.okkero.skedule
 
 import de.md5lukas.schedulers.AbstractScheduler
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 /**
  * The BukkitContext holds information for the [BukkitDispatcher] to know what to do.

@@ -150,12 +150,15 @@ object BukkitDispatcher : CoroutineDispatcher(), Delay {
 
   private fun disabledPluginException(scheduler: AbstractScheduler) =
       CancellationException("The plugin for the $scheduler is not enabled")
+
   private fun missingBukkitContextException() =
       CancellationException(
           "The BukkitDispatcher requires the BukkitContext to be available in the coroutine context")
+
   private fun retiredEntityException(scheduler: AbstractScheduler) =
       CancellationException(
           "The entity has been retired after the coroutine has been dispatched on $scheduler")
+
   private fun removedEntityException(scheduler: AbstractScheduler) =
       CancellationException(
           "The entity has been removed before the coroutine could be dispatched on $scheduler")
